@@ -292,7 +292,7 @@ export const BookDetail = () => {
                             {/* Description */}
                             {book.description && (
                                 <div className="mt-8">
-                                    <div className="flex justify-between items-center px-5">
+                                    <div className="flex justify-between items-center px-5 mb-3">
                                         <h3 className="text-lg font-semibold text-gray-800">
                                             Description
                                         </h3>

@@ -61,10 +61,10 @@ const Sidebar = ({
                   onMobileClose();
                 }
               }}
-              className={`flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer text-left w-full ${
+              className={`flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer text-left w-full bg-white ${
                 activeKey === item.key
-                  ? "bg-green-50 text-green-700 font-semibold border-l-4 border-green-500"
-                  : "text-gray-500 hover:bg-gray-100"
+                  ? "text-green-700 font-semibold border-l-4 border-green-500 bg-green-50"
+                  : "text-gray-500 hover:bg-green-50 hover:text-green-600 transition-colors duration-200"
               }`}
             >
               <FontAwesomeIcon icon={item.icon} className="text-xl" />

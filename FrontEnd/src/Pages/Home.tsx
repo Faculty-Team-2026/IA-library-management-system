@@ -10,6 +10,7 @@ export const Home = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const userRole = localStorage.getItem("userRole");
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -35,7 +36,7 @@ export const Home = () => {
       <section className="px-4 sm:px-10 mt-10 lg:px-60 bg-gradient-to-br w-full h-screen">
         <div className="h-screen flex lg:flex-row md:flex-col-reverse sm:flex-col-reverse flex-col-reverse items-center 2xl:justify-between sm:justify-center justify-end gap-8 mx-auto text-center lg:text-left">
           <div className="w-full lg:w-2/3 space-y-6">
-            <h1 className="sm:text-6xl text-2xl lg:leading-snug lg:text-4xl 2xl:text-8xl font-halimum font-bold text-gray-800 leading-tight mb-8 lg:mb-16">
+            <h1 className="sm:text-6xl text-2xl lg:leading-snug lg:text-4xl 2xl:text-6xl font-halimum font-bold text-gray-800 leading-tight mb-8 lg:mb-16">
               Where Your Book Journey Begins
             </h1>
             <p className="lg:text-base text-gray-600 text-poppins text-xs">
@@ -66,7 +67,7 @@ export const Home = () => {
 
       {/* Services Section */}
       <section>
-        <div className="px-4 sm:px-10 lg:px-60 w-full bg-white flex flex-col md:flex-row text-black items-center justify-between 2xl:gap-8">
+        <div className="px-4 sm:px-10 lg:px-60 w-full bg-white flex flex-col md:flex-row text-black items-center justify-center">
           <div className="w-full lg:w-1/2 overflow-hidden">
             <img
               src="/public/Image/students-working-study-group.jpg"
@@ -81,7 +82,7 @@ export const Home = () => {
               </h2>
               <hr className="w-14 h-[3px] bg-primary rounded-full" />
             </div>
-            <p className="text-center w-full sm:w-3/4 font-poppins text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed">
+            <p className="text-center w-full sm:w-3/4 font-poppins text-base sm:text-lg md:text-sm text-gray-700 leading-relaxed">
               Join our reading community and share your thoughts with fellow
               book enthusiasts. Discover new perspectives, engage in meaningful
               discussions, and connect with like-minded readers who share your
@@ -89,7 +90,7 @@ export const Home = () => {
             </p>
           </div>
         </div>
-        <div className="px-4 sm:px-10 lg:px-60 w-full bg-white flex flex-col md:flex-row-reverse text-black items-center justify-between 2xl:gap-8 2xl:mt-8">
+        <div className="px-4 sm:px-10 lg:px-60 w-full bg-white flex flex-col md:flex-row-reverse md:text-sm text-black items-center justify-center">
           <div className="w-full lg:w-1/2 overflow-hidden">
             <img
               src="/Image/crop-hand-picking-book-from-shelf.jpg"
@@ -104,7 +105,7 @@ export const Home = () => {
               </h2>
               <hr className="w-14 h-[3px] bg-primary rounded-full" />
             </div>
-            <p className="text-center w-full sm:w-3/4 font-poppins text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed">
+            <p className="text-center w-full sm:w-3/4 md:text-sm font-poppins text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed">
               Borrow physical books from our extensive collection, carefully
               curated to include a wide range of genres, authors, and topics to
               suit every reader's taste.
@@ -113,23 +114,25 @@ export const Home = () => {
         </div>
       </section>
 
-      {/* Popular Books Section */}
-      <section className="mt-10 px-4 sm:px-10 lg:px-60 w-full bg-white text-black">
-        <div className="w-full mx-auto">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl text-left font-poppins font-bold italic mb-8 lg:mb-14 text-primary tracking-tight drop-shadow">
-            Popular Books
-          </h2>
-          {error ? (
-            <p className="text-center text-red-500">{error}</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 justify-items-center">
-              {sortedBooks.slice(0, 6).map((book) => (
-                <BookCard book={book} key={book.id} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+      {/* Popular Books Section - Only visible to Users */}
+      {userRole === "User" && (
+        <section className="mt-10 px-4 sm:px-10 lg:px-60 w-full bg-white text-black">
+          <div className="w-full mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl text-left font-poppins font-bold italic mb-8 lg:mb-14 text-primary tracking-tight drop-shadow">
+              Popular Books
+            </h2>
+            {error ? (
+              <p className="text-center text-red-500">{error}</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 justify-items-center">
+                {sortedBooks.slice(0, 6).map((book) => (
+                  <BookCard book={book} key={book.id} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Join Club Section */}
       {!token && (

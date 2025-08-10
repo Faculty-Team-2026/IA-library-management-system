@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import InputField from "../../Components/UI/InputField";
+import InputField from "../../components/UI/InputField";
 import api from "../../Services/api";
 import { AxiosError } from "axios";
 
