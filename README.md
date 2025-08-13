@@ -100,27 +100,3 @@ A modern, full-stack library management system built with ASP.NET Core and React
 │   │   └── utils/       # Utility functions
 │   └── public/           # Static assets
 ```
-
-## API Documentation
-
-The API endpoints are documented using Swagger. When running the backend, navigate to:
-```
-http://localhost:5000/swagger
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Faculty Team 2026
-- All contributors who participated in this project
