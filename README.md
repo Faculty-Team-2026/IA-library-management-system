@@ -100,12 +100,3 @@ A modern, full-stack library management system built with ASP.NET Core and React
 │   │   └── utils/       # Utility functions
 │   └── public/           # Static assets
 ```
-
-## API Documentation
-
-The API endpoints are documented using Swagger. When running the backend, navigate to:
-```
-http://localhost:5205/swagger
-```
-
-
