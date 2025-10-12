@@ -1,6 +1,19 @@
 {
+  "name": "library-management-system",
+  "version": "1.0.0",
+  "description": "Library Management System",
+  "scripts": {
+    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd BackEnd && dotnet run",
+    "frontend": "cd FrontEnd && npm run dev",
+    "install-all": "cd FrontEnd && npm install && cd ../BackEnd && dotnet restore",
+    "build": "cd FrontEnd && npm run build && cd ../BackEnd && dotnet build"
+  },
   "dependencies": {
     "leaflet": "^1.9.4",
     "react-leaflet": "^4.2.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
   }
 }
