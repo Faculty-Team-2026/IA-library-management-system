@@ -21,7 +21,7 @@ const LibrarianRequestSection: React.FC<LibrarianRequestSectionProps> = ({ userR
                 return;
             }
 
-            await api.post('/api/Auth/request-librarian', {
+            await api.post('/Auth/request-librarian', {
                 RequestMessage: requestMsg
             });
             setSubmitted(true);

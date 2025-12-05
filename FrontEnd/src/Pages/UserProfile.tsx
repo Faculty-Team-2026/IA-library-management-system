@@ -60,7 +60,7 @@ const UserProfile: React.FC = () => {
                 }
                 
 
-                const response = await api.get('/api/Users/profile');
+                const response = await api.get('/Users/profile');
                 if (!response.data) {
                     throw new Error('No user data received');
                 }
@@ -70,7 +70,7 @@ const UserProfile: React.FC = () => {
                 
                 
                 try {
-                    const historyResponse = await api.get('/api/Borrow/my-records');
+                    const historyResponse = await api.get('/Borrow/my-records');
                     console.log('Borrow history response:', historyResponse.data);
                     setBorrowHistory(historyResponse.data);
                 } catch (err) {

@@ -13,20 +13,45 @@ namespace BackEnd.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IValidationService _validationService;
+        private readonly IEncryptionService _encryptionService;
+        private readonly IRateLimitingService _rateLimitingService;
 
-        public AuthService(ApplicationDbContext context, IConfiguration configuration)
+        public AuthService(
+            ApplicationDbContext context, 
+            IConfiguration configuration,
+            IValidationService validationService,
+            IEncryptionService encryptionService,
+            IRateLimitingService rateLimitingService)
         {
             _context = context;
             _configuration = configuration;
+            _validationService = validationService;
+            _encryptionService = encryptionService;
+            _rateLimitingService = rateLimitingService;
         }
 
         public async Task<AuthResponseDTO> Login(LoginDTO loginDTO)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginDTO.Username);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginDTO.Password, user.Password))
+            // Sanitize input
+            var username = _validationService.SanitizeHtmlInput(loginDTO.Username);
+            var password = loginDTO.Password;
+
+            // Check rate limiting
+            if (_rateLimitingService.IsAccountLockedOut(username))
             {
+                throw new Exception("Account locked due to too many login attempts. Try again later.");
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
+            {
+                _rateLimitingService.RecordLoginAttempt(username);
                 throw new Exception("Invalid username or password");
             }
+
+            // Reset login attempts on successful login
+            _rateLimitingService.ResetLoginAttempts(username);
 
             var token = GenerateJwtToken(user);
             return new AuthResponseDTO
@@ -40,27 +65,57 @@ namespace BackEnd.Services
 
         public async Task<AuthResponseDTO> Register(RegisterDTO registerDTO)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == registerDTO.Username))
-            {
-                throw new Exception("Username already exists");
-            }
+            // Validate input
+            var usernameValidation = _validationService.ValidateUsername(registerDTO.Username);
+            if (!usernameValidation.IsValid)
+                throw new Exception(usernameValidation.Message);
 
-            if (await _context.Users.AnyAsync(u => u.Email == registerDTO.Email))
-            {
+            var emailValidation = _validationService.ValidateEmail(registerDTO.Email);
+            if (!emailValidation.IsValid)
+                throw new Exception(emailValidation.Message);
+
+            var passwordValidation = _validationService.ValidatePassword(registerDTO.Password);
+            if (!passwordValidation.IsValid)
+                throw new Exception(passwordValidation.Message);
+
+            var phoneValidation = _validationService.ValidatePhoneNumber(registerDTO.PhoneNumber ?? "");
+            if (!phoneValidation.IsValid)
+                throw new Exception(phoneValidation.Message);
+
+            var ssnValidation = _validationService.ValidateSSN(registerDTO.SSN);
+            if (!ssnValidation.IsValid)
+                throw new Exception(ssnValidation.Message);
+
+            // Sanitize inputs
+            var username = _validationService.SanitizeHtmlInput(registerDTO.Username);
+            var email = _validationService.SanitizeHtmlInput(registerDTO.Email);
+            var firstName = _validationService.SanitizeHtmlInput(registerDTO.FirstName);
+            var lastName = _validationService.SanitizeHtmlInput(registerDTO.LastName);
+
+            // Check for duplicates
+            if (await _context.Users.AnyAsync(u => u.Username == username))
+                throw new Exception("Username already exists");
+
+            if (await _context.Users.AnyAsync(u => u.Email == email))
                 throw new Exception("Email already exists");
-            }
+
+            // Encrypt sensitive data
+            var encryptedSSN = _encryptionService.Encrypt(registerDTO.SSN);
+            var encryptedPhone = string.IsNullOrEmpty(registerDTO.PhoneNumber) 
+                ? null 
+                : _encryptionService.Encrypt(registerDTO.PhoneNumber);
 
             var user = new User
             {
-                Username = registerDTO.Username,
+                Username = username,
                 Password = BCrypt.Net.BCrypt.HashPassword(registerDTO.Password),
                 Role = "User",
-                Email = registerDTO.Email,
+                Email = email,
                 CreatedAt = DateTime.UtcNow,
-                FirstName = registerDTO.FirstName,
-                LastName = registerDTO.LastName,
-                SSN = registerDTO.SSN,
-                PhoneNumber = registerDTO.PhoneNumber
+                FirstName = firstName,
+                LastName = lastName,
+                SSN = encryptedSSN,
+                PhoneNumber = encryptedPhone
             };
 
             _context.Users.Add(user);

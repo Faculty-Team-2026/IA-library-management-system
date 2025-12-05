@@ -43,7 +43,7 @@ const BookManagement: React.FC<BookManagementProps> = ({
 
   useEffect(() => {
     axios
-      .get("/api/Books")
+      .get("/Books")
       .then((response) => {
         const data = Array.isArray(response.data)
           ? response.data.map((b: Book) => ({
@@ -77,7 +77,7 @@ const BookManagement: React.FC<BookManagementProps> = ({
         formData.append("CoverImageFile", newBookImage);
       }
       axios
-        .post("/api/Books", formData, {
+        .post("/Books", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         })
         .then((response) => {
@@ -137,7 +137,7 @@ const BookManagement: React.FC<BookManagementProps> = ({
     }
 
     axios
-      .put(`/api/Books/${editingBook.id}`, formData, {
+      .put(`/Books/${editingBook.id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })
       .then((response) => {
@@ -171,7 +171,7 @@ const BookManagement: React.FC<BookManagementProps> = ({
 
   const handleDeleteBook = (id: number) => {
     axios
-      .delete(`/api/Books/${id}`)
+      .delete(`/Books/${id}`)
       .then(() => {
         setBooks(books.filter((book) => book.id !== id));
         if (onDeleteClick) {

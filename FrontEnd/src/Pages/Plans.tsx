@@ -108,7 +108,7 @@ export const Services = () => {
     useEffect(() => {
         const fetchPlans = async () => {
             try {
-                const response = await api.get('/api/Membership');
+                const response = await api.get('/Membership');
                 // Sort plans: free trial (price = 0) first, then by price, undefined prices last
                 const sortedPlans = response.data.sort((a: Membership, b: Membership) => {
                     // Handle free trial (price = 0)

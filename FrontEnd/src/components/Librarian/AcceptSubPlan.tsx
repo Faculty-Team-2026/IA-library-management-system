@@ -48,7 +48,7 @@ const AcceptSubPlan: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await api.get('/api/Membership/requests');
+      const res = await api.get('/Membership/requests');
       setRequests(res.data);
     } catch (err: unknown) {
       const apiError = err as ApiError;

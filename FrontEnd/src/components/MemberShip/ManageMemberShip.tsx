@@ -27,7 +27,7 @@ const ManageMemberShip: React.FC<ManageMemberShipProps> = ({
   useEffect(() => {
     const fetchMemberships = async () => {
       try {
-        const response = await api.get("/api/Membership");
+        const response = await api.get("/Membership");
         setMemberships(response.data);
       } catch (err) {
         setMembershipError("Failed to load memberships");
@@ -127,7 +127,7 @@ const ManageMemberShip: React.FC<ManageMemberShipProps> = ({
         onClose={() => setIsDialogOpen(false)}
         onAdd={async (newMembership: Membership) => {
           try {
-            const response = await api.post("/api/Membership", newMembership);
+            const response = await api.post("/Membership", newMembership);
             setMemberships([...memberships, response.data]);
             setIsDialogOpen(false);
           } catch (err) {

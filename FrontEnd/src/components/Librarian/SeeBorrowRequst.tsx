@@ -32,7 +32,7 @@ const SeeBorrowRequest: React.FC = () => {
     const fetchRequests = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/api/Borrow/requests');
+            const response = await api.get('/Borrow/requests');
             setRequests(response.data);
             setError(null);
         } catch (err: unknown) {

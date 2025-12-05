@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    
+    allowedHosts: ['knox-mimosaceous-maris.ngrok-free.dev'],
     hmr: {
       overlay: false
     }

@@ -82,7 +82,7 @@ const AdminDashboard = () => {
         setLoading(true);
         setError(null);
         if (activeTab === "users") {
-          const response = await api.get("/api/Users", {
+          const response = await api.get("/Users", {
             headers: { Authorization: `Bearer ${token}` },
           });
           setUsers(response.data);
@@ -220,7 +220,7 @@ const AdminDashboard = () => {
     };
 
     api
-      .post("/api/Users", payload, {
+      .post("/Users", payload, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {

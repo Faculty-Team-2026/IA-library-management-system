@@ -15,7 +15,7 @@ export const Home = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await api.get("/api/Books");
+        const response = await api.get("/Books");
         setBooks(response.data);
       } catch (error) {
         console.error("Error fetching books:", error);

@@ -28,6 +28,9 @@ internal class Program
         builder.Services.AddScoped<ILibrarianService, LibrarianService>();
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IMembershipService, MembershipService>();
+        builder.Services.AddScoped<IValidationService, ValidationService>();
+        builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+        builder.Services.AddSingleton<IRateLimitingService, RateLimitingService>();
 
         builder.Services.Configure<FormOptions>(options =>
         {
@@ -50,7 +53,7 @@ internal class Program
             options.AddDefaultPolicy(policy =>
             {
                 policy
-                      .WithOrigins("http://localhost:5173", "http://localhost:3000")
+                      .WithOrigins("http://localhost:5173", "http://localhost:3000", "https://knox-mimosaceous-maris.ngrok-free.dev")
                       .AllowAnyHeader()
                       .AllowAnyMethod()
                       .AllowCredentials();
@@ -99,6 +102,30 @@ internal class Program
 
         // app.UseHttpsRedirection();
 
+        // Add security headers middleware
+        app.Use(async (context, next) =>
+        {
+            // Prevent MIME type sniffing
+            context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+            
+            // Prevent clickjacking attacks
+            context.Response.Headers["X-Frame-Options"] = "DENY";
+            
+            // Enable XSS protection
+            context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+            
+            // Referrer policy
+            context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+            
+            // Content Security Policy
+            context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';";
+            
+            // Strict Transport Security (for HTTPS)
+            context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+            
+            await next();
+        });
+
         // Enable CORS before other middleware
         app.UseCors();
 
@@ -113,6 +140,7 @@ internal class Program
             try
             {
                 var context = services.GetRequiredService<ApplicationDbContext>();
+                var encryptionService = services.GetRequiredService<IEncryptionService>();
                 await context.Database.MigrateAsync();
 
                 // Seed admin user
@@ -121,14 +149,14 @@ internal class Program
                     context.Users.Add(new User
                     {
                         Username = "admin",
-                        Password = BCrypt.Net.BCrypt.HashPassword("admin123"),
+                        Password = BCrypt.Net.BCrypt.HashPassword("Admin@123456"),
                         Role = "Admin",
                         Email = "admin@library.com",
                         CreatedAt = DateTime.UtcNow,
                         FirstName = "Admin",
                         LastName = "User",
-                        SSN = "123-45-6789",
-                        PhoneNumber = "123-456-7890"
+                        SSN = encryptionService.Encrypt("123-45-6789"),
+                        PhoneNumber = encryptionService.Encrypt("123-456-7890")
                     });
                 }
 

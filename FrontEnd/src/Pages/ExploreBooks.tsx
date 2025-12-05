@@ -12,7 +12,7 @@ export const ExploreBooks = () => {
   const fetchBooks = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/Books");
+      const response = await api.get("/Books");
       if (Array.isArray(response.data)) {
         setBooks(response.data);
       } else {

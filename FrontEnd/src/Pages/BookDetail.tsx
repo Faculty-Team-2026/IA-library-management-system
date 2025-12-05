@@ -18,7 +18,7 @@ export const BookDetail = () => {
 
     const fetchBook = async () => {
         try {
-            const response = await axios.get(`/api/Books/${id}`);
+            const response = await axios.get(`/Books/${id}`);
             setBook(response.data);
             setError(null); // Clear any previous errors
         } catch (err) {

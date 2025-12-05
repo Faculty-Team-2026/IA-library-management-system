@@ -52,7 +52,7 @@ const UserSelectPlanDialouge: React.FC<{ onRequestSent?: () => void }> = ({ onRe
         setError(null);
         
         // Fetch plans first
-        const plansRes = await api.get<Membership[]>('/api/Membership');
+        const plansRes = await api.get<Membership[]>('/Membership');
         console.log('Available plans:', plansRes.data);
         setPlans(plansRes.data);
 
@@ -60,7 +60,7 @@ const UserSelectPlanDialouge: React.FC<{ onRequestSent?: () => void }> = ({ onRe
         const userId = localStorage.getItem('userId');
         if (userId) {
           try {
-            const membershipRes = await api.get<UserMembership>(`/api/Membership/user/${userId}`);
+            const membershipRes = await api.get<UserMembership>(`/Membership/user/${userId}`);
             console.log('Current membership:', membershipRes.data);
             if (membershipRes.data) {
               setCurrentMembership(membershipRes.data);
@@ -134,7 +134,7 @@ const UserSelectPlanDialouge: React.FC<{ onRequestSent?: () => void }> = ({ onRe
         parentUserId: selectedPlanData.isFamilyPlan ? parseInt(userId) : null
       };
 
-      await api.post('/api/Membership/request', requestData);
+      await api.post('/Membership/request', requestData);
       setSuccess('Request sent to librarian for approval. Your current plan will remain active until the new plan is approved.');
       if (onRequestSent) onRequestSent();
     } catch (err: unknown) {

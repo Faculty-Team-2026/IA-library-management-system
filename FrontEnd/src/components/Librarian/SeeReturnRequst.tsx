@@ -42,7 +42,7 @@ const SeeReturnRequest: React.FC = () => {
     const fetchRequests = React.useCallback(async () => {
         try {
             setLoading(true);
-            const response = await api.get('/api/Borrow/records');
+            const response = await api.get('/Borrow/records');
             setAllRequests(response.data);
             setFilteredRequests(response.data); // Initially show all records
             setError(null);
