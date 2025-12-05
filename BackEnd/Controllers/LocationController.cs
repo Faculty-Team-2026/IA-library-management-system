@@ -16,7 +16,7 @@ namespace BackEnd.Controllers
 
         public LocationController(ApplicationDbContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         [HttpGet]

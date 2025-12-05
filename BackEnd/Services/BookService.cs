@@ -12,7 +12,7 @@ namespace BackEnd.Services
 
         public BookService(ApplicationDbContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task<IEnumerable<BookDTO>> GetAllBooks()

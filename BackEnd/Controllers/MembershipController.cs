@@ -21,8 +21,8 @@ namespace BackEnd.Controllers
             IMembershipService membershipService,
             ILogger<MembershipController> logger)
         {
-            _membershipService = membershipService;
-            _logger = logger;
+            _membershipService = membershipService ?? throw new ArgumentNullException(nameof(membershipService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>

@@ -16,7 +16,7 @@ namespace BackEnd.Controllers
 
         public LibrarianController(ILibrarianService librarianService)
         {
-            _librarianService = librarianService;
+            _librarianService = librarianService ?? throw new ArgumentNullException(nameof(librarianService));
         }
 
         [HttpGet("requests")]

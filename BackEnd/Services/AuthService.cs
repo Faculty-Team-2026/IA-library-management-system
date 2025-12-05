@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace BackEnd.Services
 {
@@ -16,42 +17,84 @@ namespace BackEnd.Services
         private readonly IValidationService _validationService;
         private readonly IEncryptionService _encryptionService;
         private readonly IRateLimitingService _rateLimitingService;
+        private readonly ILogger<AuthService> _logger;
 
         public AuthService(
             ApplicationDbContext context, 
             IConfiguration configuration,
             IValidationService validationService,
             IEncryptionService encryptionService,
-            IRateLimitingService rateLimitingService)
+            IRateLimitingService rateLimitingService,
+            ILogger<AuthService> logger)
         {
-            _context = context;
-            _configuration = configuration;
-            _validationService = validationService;
-            _encryptionService = encryptionService;
-            _rateLimitingService = rateLimitingService;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
+            _encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
+            _rateLimitingService = rateLimitingService ?? throw new ArgumentNullException(nameof(rateLimitingService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<AuthResponseDTO> Login(LoginDTO loginDTO)
+        public async Task<AuthResponseDTO> Login(LoginDTO loginDTO, string ipAddress = "unknown")
         {
+            if (loginDTO == null)
+                throw new ArgumentNullException(nameof(loginDTO));
+
             // Sanitize input
             var username = _validationService.SanitizeHtmlInput(loginDTO.Username);
             var password = loginDTO.Password;
 
-            // Check rate limiting
-            if (_rateLimitingService.IsAccountLockedOut(username))
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                throw new ArgumentException("Username and password are required.");
+
+            // Ensure IP address is not null
+            ipAddress = string.IsNullOrWhiteSpace(ipAddress) ? "unknown" : ipAddress;
+
+            // Check rate limiting based on IP address and username
+            if (_rateLimitingService.IsAccountLockedOut(username, ipAddress))
             {
-                throw new Exception("Account locked due to too many login attempts. Try again later.");
+                _logger.LogWarning($"Login attempt blocked for {username} from {ipAddress} - account/IP locked out");
+                throw new Exception("Too many login attempts. Try again later.");
+            }
+
+            // Apply login delay (exponential backoff) to slow down brute force attacks
+            int delaySeconds = _rateLimitingService.GetLoginDelaySeconds(ipAddress);
+            if (delaySeconds > 0)
+            {
+                _logger.LogInformation($"Applying {delaySeconds}s delay for {ipAddress} due to previous failed attempts");
+                await Task.Delay(delaySeconds * 1000);
             }
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
             {
-                _rateLimitingService.RecordLoginAttempt(username);
-                throw new Exception("Invalid username or password");
+                _rateLimitingService.RecordLoginAttempt(username, ipAddress);
+                int remainingAttempts = _rateLimitingService.GetRemainingAttempts(username, ipAddress);
+                
+                _logger.LogWarning(
+                    $"Failed login attempt for user '{username}' from {ipAddress}. " +
+                    $"Remaining attempts: {remainingAttempts}"
+                );
+
+                throw new Exception($"Invalid username or password. Attempts remaining: {remainingAttempts}");
             }
 
-            // Reset login attempts on successful login
-            _rateLimitingService.ResetLoginAttempts(username);
+            // Check if account has excessive concurrent IPs (possible account compromise)
+            if (_rateLimitingService.HasExcessiveIPCount(username))
+            {
+                var activeIPs = _rateLimitingService.GetUserActiveIPs(username);
+                _logger.LogError(
+                    $"⚠️ SECURITY ALERT: Account '{username}' accessed from {activeIPs.Count} different IPs in 24 hours. " +
+                    $"This may indicate account compromise. Active IPs: {string.Join(", ", activeIPs)}"
+                );
+                // Could implement additional security measures here like requiring email verification
+            }
+
+            // Reset login attempts on successful login and record this IP
+            _rateLimitingService.ResetLoginAttempts(username, ipAddress);
+            _rateLimitingService.RecordSuccessfulLogin(username, ipAddress);
+            
+            _logger.LogInformation($"Successful login for user '{username}' from {ipAddress}");
 
             var token = GenerateJwtToken(user);
             return new AuthResponseDTO
@@ -65,6 +108,9 @@ namespace BackEnd.Services
 
         public async Task<AuthResponseDTO> Register(RegisterDTO registerDTO)
         {
+            if (registerDTO == null)
+                throw new ArgumentNullException(nameof(registerDTO));
+
             // Validate input
             var usernameValidation = _validationService.ValidateUsername(registerDTO.Username);
             if (!usernameValidation.IsValid)
@@ -133,6 +179,12 @@ namespace BackEnd.Services
 
         public async Task<bool> RequestLibrarianRole(long userId, string requestMessage)
         {
+            if (userId <= 0)
+                throw new ArgumentException("User ID must be greater than 0.", nameof(userId));
+
+            if (string.IsNullOrWhiteSpace(requestMessage))
+                throw new ArgumentException("Request message is required.", nameof(requestMessage));
+
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
             {

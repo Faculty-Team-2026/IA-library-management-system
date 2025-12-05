@@ -15,7 +15,7 @@ namespace BackEnd.Controllers
 
         public UsersController(IUserService userService)
         {
-            _userService = userService;
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
 
         [HttpGet]
@@ -62,8 +62,14 @@ namespace BackEnd.Controllers
         {
             try
             {
+                if (updateUserDTO == null)
+                    return BadRequest(new { message = "Update user request cannot be null" });
+
                 //Check if the user is updating their own profile or is an admin
-                 var userId = long.Parse(User.FindFirst("userId").Value);
+                var userIdClaim = User?.FindFirst("userId");
+                if (userIdClaim == null || !long.TryParse(userIdClaim.Value, out var userId))
+                    return Unauthorized(new { message = "User ID claim not found. Please log in again." });
+
                 var isAdmin = User.IsInRole("Admin");
 
                 if (!isAdmin && userId != id)

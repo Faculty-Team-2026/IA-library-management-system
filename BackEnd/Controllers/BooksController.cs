@@ -17,7 +17,7 @@ namespace BackEnd.Controllers
 
         public BooksController(IBookService bookService)
         {
-            _bookService = bookService;
+            _bookService = bookService ?? throw new ArgumentNullException(nameof(bookService));
         }
 
         [HttpGet]

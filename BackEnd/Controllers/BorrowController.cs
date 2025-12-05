@@ -16,7 +16,7 @@ namespace BackEnd.Controllers
 
         public BorrowController(IBorrowService borrowService)
         {
-            _borrowService = borrowService;
+            _borrowService = borrowService ?? throw new ArgumentNullException(nameof(borrowService));
         }
 
         [HttpPost("request/{bookId}")]
@@ -24,7 +24,13 @@ namespace BackEnd.Controllers
         {
             try
             {
-                var userId = long.Parse(User.FindFirst("userId").Value);
+                var userIdClaim = User?.FindFirst("userId");
+                if (userIdClaim == null)
+                    return Unauthorized(new { message = "User ID claim not found. Please log in again." });
+
+                if (!long.TryParse(userIdClaim.Value, out var userId))
+                    return BadRequest(new { message = "Invalid user ID format" });
+
                 var request = await _borrowService.RequestBorrow(userId, bookId);
                 return Ok(request);
             }

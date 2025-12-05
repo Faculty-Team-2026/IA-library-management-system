@@ -11,7 +11,7 @@ namespace BackEnd.Services
 
         public BorrowService(ApplicationDbContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task<BorrowRequestDTO> RequestBorrow(long userId, long bookId)

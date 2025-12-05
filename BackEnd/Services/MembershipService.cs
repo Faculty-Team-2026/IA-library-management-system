@@ -15,8 +15,8 @@ namespace BackEnd.Services
             ApplicationDbContext dbContext,
             ILogger<MembershipService> logger)
         {
-            _dbContext = dbContext;
-            _logger = logger;
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<List<Membership>> GetAllMembershipsAsync() =>

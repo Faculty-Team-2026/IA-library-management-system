@@ -22,10 +22,10 @@ namespace BackEnd.Controllers
             IValidationService validationService,
             IEncryptionService encryptionService)
         {
-            _context = context;
-            _authService = authService;
-            _validationService = validationService;
-            _encryptionService = encryptionService;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+            _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
+            _encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
         }
 
         /// <summary>

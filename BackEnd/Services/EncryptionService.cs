@@ -10,7 +10,7 @@ namespace BackEnd.Services
 
         public EncryptionService(IConfiguration configuration)
         {
-            _configuration = configuration;
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
         /// <summary>

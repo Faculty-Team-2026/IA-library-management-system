@@ -140,7 +140,14 @@ internal class Program
             try
             {
                 var context = services.GetRequiredService<ApplicationDbContext>();
-                var encryptionService = services.GetRequiredService<IEncryptionService>();
+                var encryptionService = services.GetService<IEncryptionService>();
+                
+                // Ensure encryption service is available
+                if (encryptionService == null)
+                {
+                    throw new InvalidOperationException("IEncryptionService is not registered in dependency injection container.");
+                }
+
                 await context.Database.MigrateAsync();
 
                 // Seed admin user
@@ -251,8 +258,18 @@ internal class Program
             }
             catch (Exception ex)
             {
-                var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "An error occurred during migration and seeding.");
+                var logger = services.GetService<ILogger<Program>>();
+                if (logger != null)
+                {
+                    logger.LogError(ex, "An error occurred during migration and seeding.");
+                }
+                else
+                {
+                    Console.WriteLine($"An error occurred during migration and seeding: {ex.Message}");
+                }
+                
+                // Re-throw to prevent app from starting with corrupted state
+                throw;
             }
         }
 

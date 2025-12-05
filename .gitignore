@@ -91,5 +91,7 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 
+# Security test results
+scripts
 
 FrontEnd/yarn.lock
