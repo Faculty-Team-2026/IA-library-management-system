@@ -40,8 +40,8 @@ namespace BackEnd.Services
             if (loginDTO == null)
                 throw new ArgumentNullException(nameof(loginDTO));
 
-            // Sanitize input
-            var username = _validationService.SanitizeHtmlInput(loginDTO.Username);
+            // Get username and password (no validation during login, only sanitization)
+            var username = _validationService.SanitizeHtmlInput(loginDTO.Username?.Trim());
             var password = loginDTO.Password;
 
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))

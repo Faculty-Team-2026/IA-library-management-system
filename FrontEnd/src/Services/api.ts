@@ -4,13 +4,25 @@ import axios from "axios";
 // API CONFIGURATION
 // ============================================================================
 
-const API_BASE_URL = "http://localhost:5205/api";
+// Auto-detect environment
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isLocalIP = /^192\.168\./.test(window.location.hostname) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname) || /^10\./.test(window.location.hostname);
+const isNgrok = window.location.hostname.includes('ngrok');
+
+// When on ngrok, use /api-proxy which Vite will proxy to localhost:5205
+// When on localhost/local IP, use direct connection
+const API_BASE_URL = isNgrok
+  ? "/api"  // ngrok: Use Vite proxy to backend
+  : "http://localhost:5205/api";  // PC/Local Network: Direct connection
+
+console.log(`API Base URL: ${API_BASE_URL} (isLocalhost: ${isLocalhost}, isNgrok: ${isNgrok})`);
 
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
   },
 });
 

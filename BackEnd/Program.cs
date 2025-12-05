@@ -53,10 +53,10 @@ internal class Program
             options.AddDefaultPolicy(policy =>
             {
                 policy
-                      .WithOrigins("http://localhost:5173", "http://localhost:3000", "https://knox-mimosaceous-maris.ngrok-free.dev")
+                      .AllowAnyOrigin()  // Allow any origin for mobile/ngrok testing
                       .AllowAnyHeader()
-                      .AllowAnyMethod()
-                      .AllowCredentials();
+                      .AllowAnyMethod();
+                      // Note: Cannot use AllowCredentials() with AllowAnyOrigin()
             });
         });
 
@@ -94,6 +94,9 @@ internal class Program
 
         var app = builder.Build();
 
+        // Enable static files for testing page
+        app.UseStaticFiles();
+
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
@@ -105,11 +108,30 @@ internal class Program
         // Add security headers middleware
         app.Use(async (context, next) =>
         {
+            // Log all incoming requests
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {context.Request.Method} {context.Request.Path} from {context.Connection.RemoteIpAddress}");
+            Console.WriteLine($"  Origin: {context.Request.Headers["Origin"]}");
+            Console.WriteLine($"  User-Agent: {context.Request.Headers["User-Agent"]}");
+            
+            // Bypass ngrok browser warning for mobile devices
+            context.Response.Headers["ngrok-skip-browser-warning"] = "true";
+            
+            // Handle OPTIONS preflight requests explicitly
+            if (context.Request.Method == "OPTIONS")
+            {
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+                context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, ngrok-skip-browser-warning";
+                context.Response.StatusCode = 200;
+                await context.Response.CompleteAsync();
+                return;
+            }
+            
             // Prevent MIME type sniffing
             context.Response.Headers["X-Content-Type-Options"] = "nosniff";
             
-            // Prevent clickjacking attacks
-            context.Response.Headers["X-Frame-Options"] = "DENY";
+            // Prevent clickjacking attacks (relaxed for mobile)
+            context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
             
             // Enable XSS protection
             context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
@@ -117,11 +139,8 @@ internal class Program
             // Referrer policy
             context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
             
-            // Content Security Policy
-            context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';";
-            
-            // Strict Transport Security (for HTTPS)
-            context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+            // Content Security Policy (relaxed for mobile testing)
+            context.Response.Headers["Content-Security-Policy"] = "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';";
             
             await next();
         });

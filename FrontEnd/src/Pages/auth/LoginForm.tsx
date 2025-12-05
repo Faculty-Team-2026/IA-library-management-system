@@ -59,10 +59,14 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5205/api/Auth/login", {
+      const isNgrok = window.location.hostname.includes('ngrok');
+      const API_URL = isNgrok ? "/api" : "http://localhost:5205/api";
+      
+      const response = await fetch(`${API_URL}/Auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
         },
         body: JSON.stringify({
           username: formData.username,

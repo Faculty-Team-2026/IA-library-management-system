@@ -43,12 +43,14 @@ export const Navigation = () => {
   }, [location]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("username");
+    // Clear all localStorage items
+    localStorage.clear();
+    
+    // Reset user state
     setUser(null);
-    navigate("/");
+    
+    // Force navigation with page reload to clear any stale state
+    window.location.href = "/auth/login";
   };
 
   const navLinks = [

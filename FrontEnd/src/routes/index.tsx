@@ -1,3 +1,4 @@
+import React from "react";
 import { createBrowserRouter } from "react-router-dom";
 import { Home } from "../Pages/Home";
 import { BookDetail } from "../Pages/BookDetail";
@@ -13,12 +14,22 @@ import Register from "../Pages/auth/Register";
 import ChatePage from "../Pages/ChatePage";
 
 // Optional: Simple error fallback
-const ErrorFallback = () => (
-  <div style={{ padding: "2rem", color: "red" }}>
-    <h2>Something went wrong</h2>
-    <p>Please try again later.</p>
-  </div>
-);
+const ErrorFallback = () => {
+  // Clear any stale data and redirect to login
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      window.location.href = "/auth/login";
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div style={{ padding: "2rem", color: "red" }}>
+      <h2>Redirecting to login...</h2>
+      <p>Please wait.</p>
+    </div>
+  );
+};
 
 export const router = createBrowserRouter([
   {

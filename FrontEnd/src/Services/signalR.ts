@@ -17,11 +17,18 @@ export function startConnection(
     return Promise.resolve();
   }
 
+  // Detect if running through ngrok
+  const isNgrok = typeof window !== 'undefined' && window.location.hostname.includes('ngrok');
+  const API_BASE = isNgrok ? "" : "http://localhost:5205";
+  
   connection = new signalR.HubConnectionBuilder()
-    .withUrl("http://localhost:5205/chathub", {
+    .withUrl(`${API_BASE}/chathub`, {
       skipNegotiation: false,
       transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
-      withCredentials: true
+      withCredentials: false,
+      headers: {
+        "ngrok-skip-browser-warning": "true"
+      }
     })
     .withAutomaticReconnect([0, 2000, 5000, 10000, 20000])
     .configureLogging(signalR.LogLevel.Debug)
