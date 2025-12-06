@@ -176,7 +176,7 @@ internal class Program
                     context.Users.Add(new User
                     {
                         Username = "admin",
-                        Password = BCrypt.Net.BCrypt.HashPassword("Admin@123456"),
+                        Password = BCrypt.Net.BCrypt.HashPassword("admin123"),
                         Role = "Admin",
                         Email = "admin@library.com",
                         CreatedAt = DateTime.UtcNow,

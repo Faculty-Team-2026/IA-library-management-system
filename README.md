@@ -37,7 +37,7 @@ A modern, full-stack library management system built with ASP.NET Core and React
   - **AES-256 Encryption** for sensitive data at rest (SSN, Phone numbers)
   - **bcrypt Password Hashing** using bcrypt.NET with salt rounds
   - **JWT Token-Based Authentication** with HS256 algorithm and 12-hour expiration
-  - **OAuth2 Single Sign-On (SSO)** - Google, GitHub, Microsoft integration
+  - **OAuth2 Single Sign-On (SSO)** - Google integration
   - **Input Validation & Sanitization** to prevent SQL injection and XSS attacks
   - **Rate Limiting** to protect against brute force attacks (5 attempts / 15 min)
   - **Security Headers** for comprehensive browser protection
@@ -91,7 +91,7 @@ This project implements comprehensive security measures to protect user data and
 - **Status**: ✅ Tested and Working
 
 ### 4. **Single Sign-On (SSO)** using OAuth2
-- **Providers**: Google, GitHub, Microsoft
+- **Provider**: Google
 - **Implementation**: Custom OAuth2 integration
 - **Location**: `BackEnd/Controllers/SSOController.cs`, `FrontEnd/src/Services/api.ts`
 - **Features**: 
@@ -101,8 +101,6 @@ This project implements comprehensive security measures to protect user data and
   - Frontend integration with login buttons
 - **Endpoints**:
   - `POST /api/sso/google`
-  - `POST /api/sso/github`
-  - `POST /api/sso/microsoft`
 - **Status**: ✅ Tested and Working
 
 ### 5. **Secure Coding Practices** to prevent DoS, SQL Injection, and XSS

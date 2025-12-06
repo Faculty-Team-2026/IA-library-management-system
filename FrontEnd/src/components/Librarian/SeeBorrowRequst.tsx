@@ -45,7 +45,7 @@ const SeeBorrowRequest: React.FC = () => {
 
     const handleApprove = async (requestId: number) => {
         try {
-            await api.post(`/api/Borrow/approve/${requestId}`);
+            await api.post(`/Borrow/approve/${requestId}`);
             // Refresh the requests list
             fetchRequests();
         } catch (err: unknown) {
@@ -56,7 +56,7 @@ const SeeBorrowRequest: React.FC = () => {
 
     const handleReject = async (requestId: number) => {
         try {
-            await api.post(`/api/Borrow/reject/${requestId}`);
+            await api.post(`/Borrow/reject/${requestId}`);
             // Refresh the requests list
             fetchRequests();
         } catch (err: unknown) {

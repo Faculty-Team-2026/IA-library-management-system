@@ -89,7 +89,7 @@ const SeeReturnRequest: React.FC = () => {
             setError(null);
             setSuccess(null);
             
-            await api.post(`/api/Borrow/return/${recordId}`);
+            await api.post(`/Borrow/return/${recordId}`);
             setSuccess('Book return processed successfully');
             
             // Refresh the requests list

@@ -31,7 +31,7 @@ const BorrowRequestDialog: React.FC<BorrowRequestDialogProps> = ({
         try {
             setLoading(true);
             setError(null);
-            await api.post(`/api/Borrow/request/${bookId}`);
+            await api.post(`/Borrow/request/${bookId}`);
             onSuccess();
             onClose();
         } catch (err: unknown) {
