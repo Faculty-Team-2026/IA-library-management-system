@@ -18,6 +18,8 @@ import ManageMemberShip from "../components/MemberShip/ManageMemberShip";
 import JoinUS from "../components/admin/JoinUS";
 import AddLocationDialog from "../components/maps/AddLocationDialog";
 import locationService, { Location } from "../Services/locationService";
+import SystemLogger from "../components/admin/SystemLogger";
+import { faClipboard } from "@fortawesome/free-solid-svg-icons";
 
 // Lazy load MapView component
 const MapView = lazy(() => import("../components/maps/MapView"));
@@ -28,6 +30,7 @@ const sidebarItems = [
   { key: "req", icon: faSignIn, label: "Registration Requests" },
   { key: "memberships", icon: faCrown, label: "Manage Membership plans" },
   { key: "map", icon: faMapMarkerAlt, label: "Map" },
+  { key: "logs", icon: faClipboard, label: "System Logs" },
 ];
 
 const defaultNewUser = {
@@ -168,7 +171,7 @@ const AdminDashboard = () => {
     };
 
     api
-      .put(`/api/Users/${editingUser.id}`, payload, {
+      .put(`/Users/${editingUser.id}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
@@ -193,7 +196,7 @@ const AdminDashboard = () => {
 
   const handleDeleteUser = (id: number) => {
     api
-      .delete(`/api/Users/${id}`, {
+      .delete(`/Users/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(() => {
@@ -379,6 +382,8 @@ const AdminDashboard = () => {
             />
           </div>
         );
+      case "logs":
+        return <SystemLogger containerClassName="w-full" />;
       default:
         return null;
     }

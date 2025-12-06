@@ -12,6 +12,7 @@ import { Librarian } from "../Pages/Librarian";
 import UserProfile from "../Pages/UserProfile";
 import Register from "../Pages/auth/Register";
 import ChatePage from "../Pages/ChatePage";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 // Optional: Simple error fallback
 const ErrorFallback = () => {
@@ -41,9 +42,31 @@ export const router = createBrowserRouter([
       { path: "/explore", element: <ExploreBooks /> },
       { path: "/book/:id", element: <BookDetail /> },
       { path: "/plans", element: <Services /> },
-      { path: "/admin", element: <AdminDashboard />, errorElement: <ErrorFallback /> },
-      { path: "/librarian", element: <Librarian /> },
-      { path: "/chat", element: <ChatePage /> },
+      {
+        path: "/admin",
+        element: (
+          <ProtectedRoute requiredRole="Admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        ),
+        errorElement: <ErrorFallback />,
+      },
+      {
+        path: "/librarian",
+        element: (
+          <ProtectedRoute requiredRole="Librarian">
+            <Librarian />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/chat",
+        element: (
+          <ProtectedRoute>
+            <ChatePage />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   {
@@ -53,7 +76,14 @@ export const router = createBrowserRouter([
     children: [
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
-      { path: "user/:id", element: <UserProfile /> },
+      {
+        path: "user/:id",
+        element: (
+          <ProtectedRoute>
+            <UserProfile />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
 ]);

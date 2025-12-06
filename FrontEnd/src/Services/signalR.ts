@@ -17,9 +17,9 @@ export function startConnection(
     return Promise.resolve();
   }
 
-  // Detect if running through ngrok
+  // Detect if running through ngrok; use proxy path when tunneling
   const isNgrok = typeof window !== 'undefined' && window.location.hostname.includes('ngrok');
-  const API_BASE = isNgrok ? "" : "http://localhost:5205";
+  const API_BASE = isNgrok ? "/api" : "http://localhost:5205";
   
   connection = new signalR.HubConnectionBuilder()
     .withUrl(`${API_BASE}/chathub`, {

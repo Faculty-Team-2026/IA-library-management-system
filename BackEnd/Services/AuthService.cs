@@ -177,23 +177,28 @@ namespace BackEnd.Services
             };
         }
 
-        public async Task<bool> RequestLibrarianRole(long userId, string requestMessage)
+        public async Task<(bool success, string message)> RequestLibrarianRole(long userId, string requestMessage)
         {
             if (userId <= 0)
-                throw new ArgumentException("User ID must be greater than 0.", nameof(userId));
+                return (false, "User ID must be greater than 0.");
 
-            if (string.IsNullOrWhiteSpace(requestMessage))
-                throw new ArgumentException("Request message is required.", nameof(requestMessage));
+            var sanitizedMessage = _validationService.SanitizeHtmlInput(requestMessage?.Trim() ?? string.Empty);
+            if (string.IsNullOrWhiteSpace(sanitizedMessage))
+                return (false, "Request message is required.");
+
+            // Enforce database length constraint proactively to avoid SQL truncation errors
+            if (sanitizedMessage.Length > 500)
+                sanitizedMessage = sanitizedMessage.Substring(0, 500);
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
             {
-                throw new Exception("User not found");
+                return (false, "User not found");
             }
 
             if (user.Role != "User")
             {
-                throw new Exception("Only regular users can request librarian role");
+                return (false, "Only regular users can request librarian role");
             }
 
             var existingRequest = await _context.LibrarianRequests
@@ -201,7 +206,7 @@ namespace BackEnd.Services
 
             if (existingRequest != null)
             {
-                throw new Exception("You already have a pending request");
+                return (true, "You already have a pending request. We will review it shortly.");
             }
 
             var request = new LibrarianRequest
@@ -209,12 +214,12 @@ namespace BackEnd.Services
                 UserId = userId,
                 RequestDate = DateTime.UtcNow,
                 Status = "Pending",
-                RequestMessage = requestMessage
+                RequestMessage = sanitizedMessage
             };
 
             _context.LibrarianRequests.Add(request);
             await _context.SaveChangesAsync();
-            return true;
+            return (true, "Your request has been submitted successfully.");
         }
 
         private string GenerateJwtToken(User user)

@@ -117,9 +117,11 @@ const UserProfile: React.FC = () => {
                 Email: editedUser.email?.trim(),
                 FirstName: editedUser.firstName?.trim(),
                 LastName: editedUser.lastName?.trim(),
-                PhoneNumber: editedUser.phoneNumber?.trim() || "",
+                PhoneNumber: editedUser.phoneNumber?.trim() || null,
                 Role: user.role
             };
+
+            console.log('Update data being sent:', updateData);
 
             if (!updateData.Username || !updateData.Email || !updateData.FirstName || !updateData.LastName) {
                 setError('Please fill in all required fields');
@@ -132,13 +134,14 @@ const UserProfile: React.FC = () => {
                 return;
             }
 
-            const response = await api.put(`/api/Users/${user.id}`, updateData);
+            const response = await api.put(`/Users/${user.id}`, updateData);
             setUser(response.data);
             setIsEditing(false);
             setError(null);
         } catch (error: unknown) {
             console.error('Error updating user:', error);
             const apiError = error as ApiError;
+            console.log('API Error Response:', apiError.response?.data);
             if (apiError.response?.data.errors) {
                 const errorMessages = Object.values(apiError.response.data.errors).flat();
                 setError(errorMessages.join(', '));

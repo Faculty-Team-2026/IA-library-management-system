@@ -77,7 +77,7 @@ const AcceptSubPlan: React.FC = () => {
     setSuccess(null);
 
     try {
-      await api.put(`/api/Membership/approve/${userMembershipId}`, null, {
+      await api.put(`/Membership/approve/${userMembershipId}`, null, {
         params: { approverId: userId }
       });
       setSuccess('Subscription approved successfully. The user\'s previous plan has been canceled and the new plan is now active.');
@@ -102,7 +102,7 @@ const AcceptSubPlan: React.FC = () => {
     setSuccess(null);
 
     try {
-      await api.put(`/api/Membership/reject/${userMembershipId}`, null, {
+      await api.put(`/Membership/reject/${userMembershipId}`, null, {
         params: { approverId: userId }
       });
       setSuccess('Subscription request rejected. The user\'s current plan remains active.');

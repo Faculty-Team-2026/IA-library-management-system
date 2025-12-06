@@ -5,6 +5,7 @@ import {
   stopConnection,
   ChatHistoryMessage
 } from "../Services/signalR";
+import { containsXssRisk, sanitizeInput } from "../utils/validation";
 
 const ChatePage: React.FC = () => {
   const [messages, setMessages] = useState<ChatHistoryMessage[]>([]);
@@ -13,7 +14,9 @@ const ChatePage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get user info from localStorage
-  const username = localStorage.getItem("username");
+  const username = sanitizeInput(localStorage.getItem("username") || "", {
+    maxLength: 50,
+  });
   const userId = Number(localStorage.getItem("userId"));
 
   useEffect(() => {
@@ -64,10 +67,15 @@ const ChatePage: React.FC = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !userId) return;
+    const sanitizedMessage = sanitizeInput(input, { maxLength: 500 });
+
+    if (!sanitizedMessage || !userId || containsXssRisk(sanitizedMessage)) {
+      setInput("");
+      return;
+    }
 
     try {
-      await sendMessage(userId, input);
+      await sendMessage(userId, sanitizedMessage);
       setInput("");
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -121,31 +129,40 @@ const ChatePage: React.FC = () => {
               No messages yet. Start the conversation!
             </div>
           ) : (
-            messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex flex-col max-w-xl ${
-                  msg.user === username ? "ml-auto items-end" : "items-start"
-                }`}
-              >
-                <span className="text-xs text-gray-500 mb-1">
-                  {msg.user} •{" "}
-                  {new Date(msg.timestamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+            messages.map((msg, idx) => {
+              const safeUser = sanitizeInput(msg.user, { maxLength: 50 });
+              const safeMessage = sanitizeInput(msg.message, {
+                maxLength: 500,
+                allowNewLines: true,
+                trim: false,
+              });
+
+              return (
                 <div
-                  className={`px-5 py-3 rounded-2xl shadow-md text-base font-medium break-words ${
-                    msg.user === username
-                      ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-800 border border-blue-100"
+                  key={idx}
+                  className={`flex flex-col max-w-xl ${
+                    safeUser === username ? "ml-auto items-end" : "items-start"
                   }`}
                 >
-                  {msg.message}
+                  <span className="text-xs text-gray-500 mb-1">
+                    {safeUser || "Unknown"} •{" "}
+                    {new Date(msg.timestamp).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  <div
+                    className={`px-5 py-3 rounded-2xl shadow-md text-base font-medium break-words ${
+                      safeUser === username
+                        ? "bg-blue-600 text-white"
+                        : "bg-white text-gray-800 border border-blue-100"
+                    }`}
+                  >
+                    <span className="whitespace-pre-wrap">{safeMessage}</span>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           <div ref={messagesEndRef} />
         </div>

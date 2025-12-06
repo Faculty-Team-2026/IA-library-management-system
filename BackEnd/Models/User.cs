@@ -41,7 +41,7 @@ namespace BackEnd.Models
         public string SSN { get; set; }
 
         [Phone]
-        [StringLength(15)] // Allows for international formats
+        [StringLength(500)] // Increased to accommodate encrypted data
         public string? PhoneNumber { get; set; }
 
         // Navigation properties

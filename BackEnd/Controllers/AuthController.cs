@@ -112,8 +112,13 @@ namespace BackEnd.Controllers
                 if (!long.TryParse(userIdClaim.Value, out var userId))
                     return BadRequest(new { message = "Invalid user ID format" });
 
-                var result = await _authService.RequestLibrarianRole(userId, request.RequestMessage);
-                return Ok(new { success = result });
+                var (success, message) = await _authService.RequestLibrarianRole(userId, request.RequestMessage);
+                if (!success)
+                {
+                    return BadRequest(new { message });
+                }
+
+                return Ok(new { success, message });
             }
             catch (Exception ex)
             {

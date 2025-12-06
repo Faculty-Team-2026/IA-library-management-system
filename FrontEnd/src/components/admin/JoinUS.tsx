@@ -51,7 +51,7 @@ const JoinUS = ({ containerClassName = "" }: JoinUSProps) => {
         try {
             setProcessingId(requestId);
             setError(null);
-            await api.post(`/api/Librarian/approve/${requestId}`);
+            await api.post(`/Librarian/approve/${requestId}`);
             setRequests(prev => prev.filter(r => r.id !== requestId));
             setSuccess('Request approved successfully');
             setTimeout(() => setSuccess(null), 3000);
@@ -67,7 +67,7 @@ const JoinUS = ({ containerClassName = "" }: JoinUSProps) => {
         try {
             setProcessingId(requestId);
             setError(null);
-            await api.post(`/api/Librarian/reject/${requestId}`);
+            await api.post(`/Librarian/reject/${requestId}`);
             setRequests(prev => prev.filter(r => r.id !== requestId));
             setSuccess('Request rejected successfully');
             setTimeout(() => setSuccess(null), 3000);

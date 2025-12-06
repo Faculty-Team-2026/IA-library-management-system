@@ -9,16 +9,31 @@ namespace BackEnd.Services
     public class UserService : IUserService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IEncryptionService _encryptionService;
 
-        public UserService(ApplicationDbContext context)
+        public UserService(ApplicationDbContext context, IEncryptionService encryptionService)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
         }
 
         public async Task<IEnumerable<UserDTO>> GetAllUsers()
         {
-            return await _context.Users
-                .Select(u => new UserDTO
+            var users = await _context.Users.ToListAsync();
+            return users.Select(u => {
+                string decryptedPhone = null;
+                if (!string.IsNullOrEmpty(u.PhoneNumber))
+                {
+                    try
+                    {
+                        decryptedPhone = _encryptionService.Decrypt(u.PhoneNumber);
+                    }
+                    catch (Exception)
+                    {
+                        decryptedPhone = u.PhoneNumber;
+                    }
+                }
+                return new UserDTO
                 {
                     Id = u.Id,
                     Username = u.Username,
@@ -28,9 +43,9 @@ namespace BackEnd.Services
                     FirstName = u.FirstName,
                     LastName = u.LastName,
                     SSN = u.SSN,
-                    PhoneNumber = u.PhoneNumber
-                })
-                .ToListAsync();
+                    PhoneNumber = decryptedPhone
+                };
+            }).ToList();
         }
 
         public async Task<UserDTO> GetUserById(long id)
@@ -43,6 +58,19 @@ namespace BackEnd.Services
                 throw new Exception("User not found");
             }
 
+            string decryptedPhone = null;
+            if (!string.IsNullOrEmpty(user.PhoneNumber))
+            {
+                try
+                {
+                    decryptedPhone = _encryptionService.Decrypt(user.PhoneNumber);
+                }
+                catch (Exception)
+                {
+                    decryptedPhone = user.PhoneNumber;
+                }
+            }
+
             return new UserDTO
             {
                 Id = user.Id,
@@ -53,7 +81,7 @@ namespace BackEnd.Services
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 SSN = user.SSN,
-                PhoneNumber = user.PhoneNumber
+                PhoneNumber = decryptedPhone
             };
         }
 
@@ -79,10 +107,10 @@ namespace BackEnd.Services
                 FirstName = userDTO.FirstName,
                 LastName = userDTO.LastName,
                 SSN = userDTO.SSN,
-                PhoneNumber = userDTO.PhoneNumber
+                PhoneNumber = !string.IsNullOrEmpty(userDTO.PhoneNumber) ? _encryptionService.Encrypt(userDTO.PhoneNumber) : null
             };
 
-            _context.Users.Add(user);
+            _context.Users.Update(user);
             await _context.SaveChangesAsync();
 
             return new UserDTO
@@ -94,8 +122,8 @@ namespace BackEnd.Services
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                SSN = user.SSN,
-                PhoneNumber = user.PhoneNumber
+                SSN = user.SSN, // Still not updating SSN
+                PhoneNumber = !string.IsNullOrEmpty(user.PhoneNumber) ? _encryptionService.Decrypt(user.PhoneNumber) : null
             };
         }
 
@@ -137,7 +165,7 @@ namespace BackEnd.Services
                 user.LastName = updateUserDTO.LastName;
 
             if (!string.IsNullOrWhiteSpace(updateUserDTO.PhoneNumber))
-                user.PhoneNumber = updateUserDTO.PhoneNumber;
+                user.PhoneNumber = _encryptionService.Encrypt(updateUserDTO.PhoneNumber);
             else 
                 user.PhoneNumber = null;  // Set to null if not provided
 
@@ -149,6 +177,19 @@ namespace BackEnd.Services
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
 
+            string decryptedPhone = null;
+            if (!string.IsNullOrEmpty(user.PhoneNumber))
+            {
+                try
+                {
+                    decryptedPhone = _encryptionService.Decrypt(user.PhoneNumber);
+                }
+                catch (Exception)
+                {
+                    decryptedPhone = user.PhoneNumber;
+                }
+            }
+
             return new UserDTO
             {
                 Id = user.Id,
@@ -159,7 +200,7 @@ namespace BackEnd.Services
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 SSN = user.SSN, // Still not updating SSN
-                PhoneNumber = user.PhoneNumber
+                PhoneNumber = decryptedPhone
             };
         }
 
@@ -173,6 +214,20 @@ namespace BackEnd.Services
                 return null;
             }
 
+            string decryptedPhone = null;
+            if (!string.IsNullOrEmpty(user.PhoneNumber))
+            {
+                try
+                {
+                    decryptedPhone = _encryptionService.Decrypt(user.PhoneNumber);
+                }
+                catch (Exception)
+                {
+                    // If decryption fails, the phone might be unencrypted - return as is
+                    decryptedPhone = user.PhoneNumber;
+                }
+            }
+
             // Map the user to a UserDTO to ensure data privacy
             return new UserDTO
             {
@@ -181,7 +236,7 @@ namespace BackEnd.Services
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                PhoneNumber = user.PhoneNumber,
+                PhoneNumber = decryptedPhone,
                 CreatedAt = user.CreatedAt,
                 Role = user.Role
             };

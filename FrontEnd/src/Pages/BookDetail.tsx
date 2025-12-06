@@ -5,8 +5,11 @@ import axios from "axios";
 import BorrowRequestDialog from "../components/Book/BorrowRequestDialog";
 import { Pause, Play, X } from "lucide-react";
 
-axios.defaults.baseURL =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:5205";
+// Align API base with ngrok/localhost setup used across the app
+const isNgrok = typeof window !== "undefined" && window.location.hostname.includes("ngrok");
+axios.defaults.baseURL = isNgrok
+    ? "/api"
+    : import.meta.env.VITE_API_BASE_URL || "http://localhost:5205/api";
 
 export const BookDetail = () => {
     const { id } = useParams();

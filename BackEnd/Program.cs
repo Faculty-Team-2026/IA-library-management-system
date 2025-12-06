@@ -30,6 +30,7 @@ internal class Program
         builder.Services.AddScoped<IMembershipService, MembershipService>();
         builder.Services.AddScoped<IValidationService, ValidationService>();
         builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+        builder.Services.AddScoped<ILoggerService, LoggerService>();
         builder.Services.AddSingleton<IRateLimitingService, RateLimitingService>();
 
         builder.Services.Configure<FormOptions>(options =>
@@ -82,7 +83,7 @@ internal class Program
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidAudience = builder.Configuration["Jwt:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                        Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured")))
                 };
             });
 

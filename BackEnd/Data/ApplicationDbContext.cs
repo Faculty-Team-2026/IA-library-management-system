@@ -19,6 +19,7 @@ namespace BackEnd.Data
         public DbSet<Membership> Memberships { get; set; }
         public DbSet<UserMembership> UserMemberships { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<SystemLog> SystemLogs { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

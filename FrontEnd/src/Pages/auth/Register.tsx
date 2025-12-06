@@ -3,6 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import InputField from "../../components/UI/InputField";
 import api from "../../Services/api";
 import { AxiosError } from "axios";
+import {
+    containsXssRisk,
+    isStrongPassword,
+    isValidEmail,
+    isValidName,
+    isValidUsername,
+    sanitizeInput,
+} from "../../utils/validation";
 
 interface RegisterFormData {
     username: string;
@@ -59,10 +67,68 @@ const Register = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        const maxLengthMap: Record<string, number> = {
+            username: 64,
+            password: 128,
+            firstName: 60,
+            lastName: 60,
+            email: 80,
+            role: 20,
+        };
+
+        const lengthLimit = maxLengthMap[name as keyof typeof maxLengthMap] ?? 120;
+
+        const sanitizedValue = sanitizeInput(value, {
+            maxLength: lengthLimit,
+            trim: true,
+        });
+
         setFormData((prev) => ({
             ...prev,
-            [name]: value,
+            [name]: sanitizedValue,
         }));
+    };
+
+    const runClientValidation = (data: RegisterFormData): ValidationErrors => {
+        const validationErrors: ValidationErrors = {};
+
+        const firstName = sanitizeInput(data.firstName, { maxLength: 60 });
+        const lastName = sanitizeInput(data.lastName, { maxLength: 60 });
+        const username = sanitizeInput(data.username, { maxLength: 64 });
+        const email = sanitizeInput(data.email, { maxLength: 80 });
+        const password = sanitizeInput(data.password, { maxLength: 128, trim: false });
+        const ssn = data.ssn.replace(/\D/g, "").slice(0, 14);
+        const phone = data.phoneNumber.replace(/\D/g, "").slice(0, 11);
+
+        if (!isValidName(firstName) || containsXssRisk(firstName)) {
+            validationErrors.FirstName = ["First name must be letters/spaces (2-60 chars) with no HTML tags."];
+        }
+
+        if (!isValidName(lastName) || containsXssRisk(lastName)) {
+            validationErrors.LastName = ["Last name must be letters/spaces (2-60 chars) with no HTML tags."];
+        }
+
+        if (!isValidUsername(username) || containsXssRisk(username)) {
+            validationErrors.Username = ["Username must be 3-32 chars using letters, numbers, . _ or - only."];
+        }
+
+        if (!isValidEmail(email) || containsXssRisk(email)) {
+            validationErrors.Email = ["Enter a valid email address."];
+        }
+
+        if (!isStrongPassword(password) || containsXssRisk(password)) {
+            validationErrors.Password = ["Password must be 8+ chars and include letters and numbers."];
+        }
+
+        if (ssn.length !== 14) {
+            validationErrors.SSN = ["National ID must be exactly 14 digits."];
+        }
+
+        if (phone.length !== 11) {
+            validationErrors.PhoneNumber = ["Phone number must be 11 digits."];
+        }
+
+        return validationErrors;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -70,17 +136,26 @@ const Register = () => {
         setErrors({});
         setLoading(true);
 
+        const clientErrors = runClientValidation(formData);
+        if (Object.keys(clientErrors).length > 0) {
+            setErrors(clientErrors);
+            setLoading(false);
+            return;
+        }
+
+        const payload = {
+            username: sanitizeInput(formData.username, { maxLength: 64 }),
+            password: sanitizeInput(formData.password, { maxLength: 128, trim: false }),
+            firstName: sanitizeInput(formData.firstName, { maxLength: 60 }),
+            lastName: sanitizeInput(formData.lastName, { maxLength: 60 }),
+            ssn: formData.ssn.replace(/\D/g, "").slice(0, 14),
+            phoneNumber: formData.phoneNumber.replace(/\D/g, "").slice(0, 11),
+            email: sanitizeInput(formData.email, { maxLength: 80 }),
+            role: formData.role,
+        };
+
         try {
-            const response = await api.post("/Auth/register", {
-                username: formData.username,
-                password: formData.password,
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                ssn: formData.ssn,
-                phoneNumber: formData.phoneNumber,
-                email: formData.email,
-                role: formData.role,
-            });
+            const response = await api.post("/Auth/register", payload);
 
             if (response.data) {
                 navigate("/auth/login", {

@@ -6,6 +6,6 @@ namespace BackEnd.Services
     {
         Task<AuthResponseDTO> Login(LoginDTO loginDTO, string ipAddress = "unknown");
         Task<AuthResponseDTO> Register(RegisterDTO registerDTO);
-        Task<bool> RequestLibrarianRole(long userId, string requestMessage);
+        Task<(bool success, string message)> RequestLibrarianRole(long userId, string requestMessage);
     }
 }

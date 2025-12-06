@@ -7,6 +7,11 @@ import Checkbox from "../../components/UI/Checkbox";
 import InputField from "../../components/UI/InputField";
 import Button from "../../components/UI/Button";
 import * as apiServices from "../../Services/api";
+import {
+  containsXssRisk,
+  isValidUsername,
+  sanitizeInput,
+} from "../../utils/validation";
 
 // SSO Icons (simple SVG)
 const GoogleIcon = () => (
@@ -40,9 +45,13 @@ const LoginForm = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    const sanitizedValue = sanitizeInput(value, {
+      maxLength: name === "password" ? 128 : 64,
+      trim: true,
+    });
     setFormData({
       ...formData,
-      [name]: value,
+      [name]: sanitizedValue,
     });
   };
 
@@ -58,8 +67,35 @@ const LoginForm = () => {
     setError("");
     setLoading(true);
 
+    const cleanedUsername = sanitizeInput(formData.username, {
+      maxLength: 64,
+    });
+    const cleanedPassword = sanitizeInput(formData.password, {
+      maxLength: 128,
+      trim: false,
+    });
+
+    if (!cleanedUsername || !isValidUsername(cleanedUsername)) {
+      setError("Enter a valid username (3-32 letters/numbers/._-)");
+      setLoading(false);
+      return;
+    }
+
+    if (!cleanedPassword) {
+      setError("Password is required");
+      setLoading(false);
+      return;
+    }
+
+    if (containsXssRisk(cleanedUsername) || containsXssRisk(cleanedPassword)) {
+      setError("Input contains disallowed characters.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const isNgrok = window.location.hostname.includes('ngrok');
+      // Use proxy path on ngrok; direct to local backend otherwise
       const API_URL = isNgrok ? "/api" : "http://localhost:5205/api";
       
       const response = await fetch(`${API_URL}/Auth/login`, {
@@ -69,8 +105,8 @@ const LoginForm = () => {
           "ngrok-skip-browser-warning": "true",
         },
         body: JSON.stringify({
-          username: formData.username,
-          password: formData.password,
+          username: cleanedUsername,
+          password: cleanedPassword,
         }),
       });
 
@@ -80,12 +116,13 @@ const LoginForm = () => {
       }
 
       const { token, role, id, username } = await response.json();
+      const safeUsername = sanitizeInput(username, { maxLength: 64 });
 
       // Store authentication data
       localStorage.setItem("token", token);
       localStorage.setItem("userRole", role);
       localStorage.setItem("userId", id.toString());
-      localStorage.setItem("username", username);
+      localStorage.setItem("username", safeUsername);
 
       // If remember me is checked, store the token in a more persistent way
       if (formData.rememberMe) {
@@ -344,17 +381,6 @@ const LoginForm = () => {
               />
             </GoogleOAuthProvider>
           </div>
-
-          <div className="relative flex items-center justify-center mt-6">
-            <hr className="w-full border-t border-gray-300" />
-          </div>
-
-          <Button
-            type="button"
-            name="Continue as a guest"
-            onClick={() => navigate("/")}
-            style="w-full py-6 bg-[#16a085] text-white rounded-md focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-          />
         </form>
       </div>
     </div>

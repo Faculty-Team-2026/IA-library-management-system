@@ -86,7 +86,7 @@ const ManageMemberShip: React.FC<ManageMemberShipProps> = ({
                 onDelete={async () => {
                   try {
                     await api.delete(
-                      `/api/Membership/${membership.membershipId}`
+                      `/Membership/${membership.membershipId}`
                     );
                     setMemberships(
                       memberships.filter(
@@ -148,7 +148,7 @@ const ManageMemberShip: React.FC<ManageMemberShipProps> = ({
           onEdit={async (updatedMembership: Membership) => {
             try {
               const response = await api.put(
-                `/api/Membership/${updatedMembership.membershipId}`,
+                `/Membership/${updatedMembership.membershipId}`,
                 updatedMembership
               );
               setMemberships(

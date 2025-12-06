@@ -7,9 +7,10 @@ interface LibrarianRequestSectionProps {
 
 const LibrarianRequestSection: React.FC<LibrarianRequestSectionProps> = ({ userRole }) => {
     const [requestMsg, setRequestMsg] = useState('');
-    const [submitted, setSubmitted] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+        const [submitted, setSubmitted] = useState(false);
+        const [serverMessage, setServerMessage] = useState<string | null>(null);
+        const [error, setError] = useState<string | null>(null);
+        const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleRequest = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,14 +22,23 @@ const LibrarianRequestSection: React.FC<LibrarianRequestSectionProps> = ({ userR
                 return;
             }
 
-            await api.post('/Auth/request-librarian', {
-                RequestMessage: requestMsg
-            });
-            setSubmitted(true);
-            setError(null);
+                const trimmedMessage = requestMsg.trim();
+                if (!trimmedMessage) {
+                    setError('Please explain why you want to become a librarian.');
+                    return;
+                }
+
+                const { data } = await api.post('/Auth/request-librarian', {
+                    requestMessage: trimmedMessage
+                });
+
+                setSubmitted(true);
+                setServerMessage(data?.message || 'Your request has been submitted successfully.');
+                setError(null);
         } catch (err) {
             console.error('Error submitting request:', err);
-            setError('Failed to submit request. Please try again later.');
+                const apiMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                setError(apiMessage || 'Failed to submit request. Please try again later.');
         } finally {
             setIsSubmitting(false);
         }
@@ -43,7 +53,7 @@ const LibrarianRequestSection: React.FC<LibrarianRequestSectionProps> = ({ userR
             <h3 className="text-lg text-black font-semibold mb-4">Request Librarian Role</h3>
             {submitted ? (
                 <div className="text-green-600">
-                    Your request has been submitted successfully. We will review it and get back to you soon.
+                    {serverMessage || 'Your request has been submitted successfully. We will review it and get back to you soon.'}
                 </div>
             ) : (
                 <form onSubmit={handleRequest}>
@@ -57,9 +67,11 @@ const LibrarianRequestSection: React.FC<LibrarianRequestSectionProps> = ({ userR
                             onChange={(e) => setRequestMsg(e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             rows={4}
+                            maxLength={500}
                             required
                             placeholder="Please explain why you want to become a librarian..."
                         />
+                        <div className="text-xs text-gray-500 mt-1">{requestMsg.length}/500 characters</div>
                     </div>
                     {error && (
                         <div className="text-red-600 text-black mb-4">
