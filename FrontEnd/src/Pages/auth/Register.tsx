@@ -177,12 +177,12 @@ const Register = () => {
                     console.warn("SessionHub connection error after registration:", err);
                 });
 
-                setSuccessMessage("✓ Registration successful! Redirecting to home page...");
-                // Navigate to landing page after successful registration
+                setSuccessMessage("✓ Registration successful! Redirecting to login page...");
+                // Navigate to login page after successful registration
                 setTimeout(() => {
-                    navigate("/", {
+                    navigate("/auth/login", {
                         state: {
-                            message: "Registration successful! Welcome to Aalam Al-Kutub.",
+                            message: "Registration successful! Please log in with your credentials.",
                         },
                     });
                 }, 2000);
