@@ -15,8 +15,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRole,
 }) => {
   const location = useLocation();
-  const token = localStorage.getItem("token");
-  const userRole = localStorage.getItem("userRole");
+  // Check sessionStorage first (current session), then localStorage (remembered session)
+  const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+  const userRole = sessionStorage.getItem("userRole") || localStorage.getItem("userRole");
 
   // Check if user is authenticated
   if (!token) {

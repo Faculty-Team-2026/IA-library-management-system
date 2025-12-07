@@ -44,6 +44,11 @@ namespace BackEnd.Models
         [StringLength(500)] // Increased to accommodate encrypted data
         public string? PhoneNumber { get; set; }
 
+        // Session tracking for concurrent login prevention
+        public string? LastActiveToken { get; set; } // Store the last valid token
+        public DateTime? LastLoginTime { get; set; } // Track last login timestamp
+        public string? LastLoginDevice { get; set; } // Track the device/IP of last login
+
         // Navigation properties
         public virtual ICollection<BorrowRequest> BorrowRequests { get; set; } = new List<BorrowRequest>();
         public virtual ICollection<BorrowRecord> BorrowRecords { get; set; } = new List<BorrowRecord>();

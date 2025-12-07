@@ -2,6 +2,7 @@
 using BackEnd.DTOs;
 using BackEnd.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 
 namespace BackEnd.Services
@@ -10,11 +11,13 @@ namespace BackEnd.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IEncryptionService _encryptionService;
+        private readonly ILogger<UserService> _logger;
 
-        public UserService(ApplicationDbContext context, IEncryptionService encryptionService)
+        public UserService(ApplicationDbContext context, IEncryptionService encryptionService, ILogger<UserService> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IEnumerable<UserDTO>> GetAllUsers()
@@ -129,79 +132,89 @@ namespace BackEnd.Services
 
         public async Task<UserDTO> UpdateUser(long id, UpdateUserDTO updateUserDTO)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
+            try
             {
-                throw new Exception("User not found");
-            }
-
-            // Check if username is being changed to one that already exists
-            if (!string.IsNullOrWhiteSpace(updateUserDTO.Username) &&
-                user.Username != updateUserDTO.Username &&
-                await _context.Users.AnyAsync(u => u.Username == updateUserDTO.Username))
-            {
-                throw new Exception("Username already exists");
-            }
-
-            // Check if email is being changed to one that already exists
-            if (!string.IsNullOrWhiteSpace(updateUserDTO.Email) &&
-                user.Email != updateUserDTO.Email &&
-                await _context.Users.AnyAsync(u => u.Email == updateUserDTO.Email))
-            {
-                throw new Exception("Email already exists");
-            }
-
-            // Update fields if they are provided (not null or whitespace)
-            if (!string.IsNullOrWhiteSpace(updateUserDTO.Username))
-                user.Username = updateUserDTO.Username;
-
-            if (!string.IsNullOrWhiteSpace(updateUserDTO.Email))
-                user.Email = updateUserDTO.Email;
-
-            if (!string.IsNullOrWhiteSpace(updateUserDTO.FirstName))
-                user.FirstName = updateUserDTO.FirstName;
-
-            if (!string.IsNullOrWhiteSpace(updateUserDTO.LastName))
-                user.LastName = updateUserDTO.LastName;
-
-            if (!string.IsNullOrWhiteSpace(updateUserDTO.PhoneNumber))
-                user.PhoneNumber = _encryptionService.Encrypt(updateUserDTO.PhoneNumber);
-            else 
-                user.PhoneNumber = null;  // Set to null if not provided
-
-            if (!string.IsNullOrWhiteSpace(updateUserDTO.Role))
-                user.Role = updateUserDTO.Role;
-
-            // Do not update SSN and Role
-
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
-
-            string decryptedPhone = null;
-            if (!string.IsNullOrEmpty(user.PhoneNumber))
-            {
-                try
+                var user = await _context.Users.FindAsync(id);
+                if (user == null)
                 {
-                    decryptedPhone = _encryptionService.Decrypt(user.PhoneNumber);
+                    throw new Exception("User not found");
                 }
-                catch (Exception)
-                {
-                    decryptedPhone = user.PhoneNumber;
-                }
-            }
 
-            return new UserDTO
+                // Check if username is being changed to one that already exists
+                if (!string.IsNullOrWhiteSpace(updateUserDTO.Username) &&
+                    user.Username != updateUserDTO.Username &&
+                    await _context.Users.AnyAsync(u => u.Username == updateUserDTO.Username))
+                {
+                    throw new Exception("Username already exists");
+                }
+
+                // Check if email is being changed to one that already exists
+                if (!string.IsNullOrWhiteSpace(updateUserDTO.Email) &&
+                    user.Email != updateUserDTO.Email &&
+                    await _context.Users.AnyAsync(u => u.Email == updateUserDTO.Email))
+                {
+                    throw new Exception("Email already exists");
+                }
+
+                // Update fields if they are provided (not null or whitespace)
+                if (!string.IsNullOrWhiteSpace(updateUserDTO.Username))
+                    user.Username = updateUserDTO.Username;
+
+                if (!string.IsNullOrWhiteSpace(updateUserDTO.Email))
+                    user.Email = updateUserDTO.Email;
+
+                if (!string.IsNullOrWhiteSpace(updateUserDTO.FirstName))
+                    user.FirstName = updateUserDTO.FirstName;
+
+                if (!string.IsNullOrWhiteSpace(updateUserDTO.LastName))
+                    user.LastName = updateUserDTO.LastName;
+
+                if (!string.IsNullOrWhiteSpace(updateUserDTO.PhoneNumber))
+                    user.PhoneNumber = _encryptionService.Encrypt(updateUserDTO.PhoneNumber);
+                else 
+                    user.PhoneNumber = null;  // Set to null if not provided
+
+                if (!string.IsNullOrWhiteSpace(updateUserDTO.Role))
+                    user.Role = updateUserDTO.Role;
+
+                // Do not update SSN and Role
+
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"User updated: {user.Username} | ID: {id}");
+
+                string decryptedPhone = null;
+                if (!string.IsNullOrEmpty(user.PhoneNumber))
+                {
+                    try
+                    {
+                        decryptedPhone = _encryptionService.Decrypt(user.PhoneNumber);
+                    }
+                    catch (Exception)
+                    {
+                        decryptedPhone = user.PhoneNumber;
+                    }
+                }
+
+                return new UserDTO
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Role = user.Role,
+                    CreatedAt = user.CreatedAt,
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    SSN = user.SSN, // Still not updating SSN
+                    PhoneNumber = decryptedPhone
+                };
+            }
+            catch (Exception ex)
             {
-                Id = user.Id,
-                Username = user.Username,
-                Role = user.Role,
-                CreatedAt = user.CreatedAt,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                SSN = user.SSN, // Still not updating SSN
-                PhoneNumber = decryptedPhone
-            };
+                _logger.LogError(ex, $"User error: Failed to update user | ID: {id}");
+                throw;
+            }
         }
 
 
@@ -244,24 +257,34 @@ namespace BackEnd.Services
 
         public async Task<bool> DeleteUser(long id)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
+            try
             {
-                throw new Exception("User not found");
+                var user = await _context.Users.FindAsync(id);
+                if (user == null)
+                {
+                    throw new Exception("User not found");
+                }
+
+                // Check if user has any active borrow records
+                var hasActiveBorrows = await _context.BorrowRecords
+                    .AnyAsync(br => br.UserId == id && br.Status == "Borrowed");
+
+                if (hasActiveBorrows)
+                {
+                    throw new Exception("Cannot delete user with active borrows");
+                }
+
+                _context.Users.Remove(user);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"User deleted: {user.Username} | ID: {id}");
+                return true;
             }
-
-            // Check if user has any active borrow records
-            var hasActiveBorrows = await _context.BorrowRecords
-                .AnyAsync(br => br.UserId == id && br.Status == "Borrowed");
-
-            if (hasActiveBorrows)
+            catch (Exception ex)
             {
-                throw new Exception("Cannot delete user with active borrows");
+                _logger.LogError(ex, $"User error: Failed to delete user | ID: {id}");
+                throw;
             }
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-            return true;
         }
     }
 }

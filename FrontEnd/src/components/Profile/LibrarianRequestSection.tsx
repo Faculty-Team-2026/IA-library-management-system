@@ -16,7 +16,7 @@ const LibrarianRequestSection: React.FC<LibrarianRequestSectionProps> = ({ userR
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token') || localStorage.getItem('token');
             if (!token) {
                 setError('Authentication token not found');
                 return;

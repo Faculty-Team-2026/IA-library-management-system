@@ -152,6 +152,9 @@ internal class Program
         app.UseAuthentication();
         app.UseAuthorization();
 
+        // Enforce single active session per user
+        app.UseMiddleware<BackEnd.Middleware.SingleSessionMiddleware>();
+
         app.MapControllers();
 
         using (var scope = app.Services.CreateScope())
@@ -293,8 +296,10 @@ internal class Program
             }
         }
 
-        // Map SignalR hub
+
+        // Map SignalR hubs
         app.MapHub<ChatHub>("/chathub");
+        app.MapHub<BackEnd.Hubs.SessionHub>("/sessionhub");
 
         await app.RunAsync();
     }

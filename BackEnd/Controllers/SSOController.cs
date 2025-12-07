@@ -3,7 +3,9 @@ using BackEnd.DTOs;
 using BackEnd.Models;
 using BackEnd.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace BackEnd.Controllers
 {
@@ -15,17 +17,23 @@ namespace BackEnd.Controllers
         private readonly IAuthService _authService;
         private readonly IValidationService _validationService;
         private readonly IEncryptionService _encryptionService;
+        private readonly IHubContext<BackEnd.Hubs.SessionHub, BackEnd.Hubs.ISessionHubClient> _sessionHubContext;
+        private readonly ILogger<SSOController> _logger;
 
         public SSOController(
             ApplicationDbContext context,
             IAuthService authService,
             IValidationService validationService,
-            IEncryptionService encryptionService)
+            IEncryptionService encryptionService,
+            IHubContext<BackEnd.Hubs.SessionHub, BackEnd.Hubs.ISessionHubClient> sessionHubContext,
+            ILogger<SSOController> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
             _encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
+            _sessionHubContext = sessionHubContext ?? throw new ArgumentNullException(nameof(sessionHubContext));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -84,8 +92,27 @@ namespace BackEnd.Controllers
                     await _context.SaveChangesAsync();
                 }
 
+                // Get client IP for session tracking
+                var ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
+
+                // Check if user is already logged in from a different device and send force logout
+                if (!string.IsNullOrEmpty(user.LastActiveToken) && user.LastLoginTime.HasValue)
+                {
+                    if (user.LastLoginDevice != ipAddress)
+                    {
+                        _logger.LogInformation($"Force logout: {user.Username} | Previous IP: {user.LastLoginDevice} | New IP (SSO): {ipAddress}");
+                        await _sessionHubContext.Clients.User(user.Id.ToString()).ForceLogout(user.Id.ToString());
+                    }
+                }
+
                 // Generate JWT token
                 var token = GenerateJwtTokenForUser(user);
+
+                // Update user's session information
+                user.LastActiveToken = token;
+                user.LastLoginTime = DateTime.UtcNow;
+                user.LastLoginDevice = ipAddress;
+                await _context.SaveChangesAsync();
 
                 return Ok(new
                 {

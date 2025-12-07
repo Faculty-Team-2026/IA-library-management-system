@@ -4,6 +4,7 @@ using BackEnd.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace BackEnd.Controllers
 {
@@ -12,10 +13,12 @@ namespace BackEnd.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly ILoggerService _loggerService;
 
-        public UsersController(IUserService userService)
+        public UsersController(IUserService userService, ILoggerService loggerService)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         [HttpGet]
@@ -47,7 +50,20 @@ namespace BackEnd.Controllers
         {
             try
             {
+                var adminIdClaim = User?.FindFirst("userId");
+                var adminNameClaim = User?.FindFirst(ClaimTypes.NameIdentifier) ?? User?.FindFirst(JwtRegisteredClaimNames.Sub);
+                
                 var user = await _userService.CreateUser(userDTO);
+                
+                // Log user creation
+                await _loggerService.LogAsync(
+                    "info",
+                    $"User Created: {user.Username} | Role: {user.Role}",
+                    "User Management",
+                    adminIdClaim?.Value,
+                    adminNameClaim?.Value ?? "Admin"
+                );
+                
                 return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
             }
             catch (Exception ex)
@@ -78,6 +94,17 @@ namespace BackEnd.Controllers
                 }
 
                 var user = await _userService.UpdateUser(id, updateUserDTO);
+                
+                // Log user update
+                var updaterNameClaim = User?.FindFirst(ClaimTypes.NameIdentifier) ?? User?.FindFirst(JwtRegisteredClaimNames.Sub);
+                await _loggerService.LogAsync(
+                    "info",
+                    $"User Updated: {user.Username}",
+                    "User Management",
+                    userId.ToString(),
+                    updaterNameClaim?.Value ?? "Unknown"
+                );
+                
                 return Ok(user);
             }
             catch (Exception ex)
@@ -92,9 +119,24 @@ namespace BackEnd.Controllers
         {
             try
             {
+                var adminIdClaim = User?.FindFirst("userId");
+                var adminNameClaim = User?.FindFirst(ClaimTypes.NameIdentifier) ?? User?.FindFirst(JwtRegisteredClaimNames.Sub);
+                
+                // Get user info before deletion
+                var userToDelete = await _userService.GetUserById(id);
+                
                 var result = await _userService.DeleteUser(id);
                 if (result)
                 {
+                    // Log user deletion
+                    await _loggerService.LogAsync(
+                        "info",
+                        $"User Deleted: {userToDelete.Username}",
+                        "User Management",
+                        adminIdClaim?.Value,
+                        adminNameClaim?.Value ?? "Admin"
+                    );
+                    
                     return NoContent();
                 }
                 return NotFound();

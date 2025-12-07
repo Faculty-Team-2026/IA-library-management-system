@@ -53,7 +53,6 @@ export const BookDetail = () => {
             // Set the state to false when speech ends
             utterance.onend = () => setIsSpeaking(false);
             
-            console.log(utterance)
             speechSynthesis.speak(utterance);
         } else {
             console.error("No description available to read.");

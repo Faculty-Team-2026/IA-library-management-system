@@ -3,6 +3,8 @@ using BackEnd.DTOs;
 using BackEnd.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 // Controllers/BooksController.cs
 
@@ -14,10 +16,12 @@ namespace BackEnd.Controllers
     public class BooksController : ControllerBase
     {
         private readonly IBookService _bookService;
+        private readonly ILoggerService _loggerService;
 
-        public BooksController(IBookService bookService)
+        public BooksController(IBookService bookService, ILoggerService loggerService)
         {
             _bookService = bookService ?? throw new ArgumentNullException(nameof(bookService));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         [HttpGet]
@@ -48,7 +52,20 @@ namespace BackEnd.Controllers
         {
             try
             {
+                var userIdClaim = User?.FindFirst("userId");
+                var userNameClaim = User?.FindFirst(ClaimTypes.NameIdentifier) ?? User?.FindFirst(JwtRegisteredClaimNames.Sub);
+                
                 var book = await _bookService.AddBook(bookDTO);
+                
+                // Log book creation
+                await _loggerService.LogAsync(
+                    "info",
+                    $"Book Created: {book.Title} | Author: {book.Author}",
+                    "Library Management",
+                    userIdClaim?.Value,
+                    userNameClaim?.Value ?? "Unknown"
+                );
+                
                 return CreatedAtAction(nameof(GetBookById), new { id = book.Id }, book);
             }
             catch (Exception ex)
@@ -63,7 +80,20 @@ namespace BackEnd.Controllers
         {
             try
             {
+                var userIdClaim = User?.FindFirst("userId");
+                var userNameClaim = User?.FindFirst(ClaimTypes.NameIdentifier) ?? User?.FindFirst(JwtRegisteredClaimNames.Sub);
+                
                 var book = await _bookService.UpdateBook(id, bookDTO);
+                
+                // Log book update
+                await _loggerService.LogAsync(
+                    "info",
+                    $"Book Updated: {book.Title}",
+                    "Library Management",
+                    userIdClaim?.Value,
+                    userNameClaim?.Value ?? "Unknown"
+                );
+                
                 return Ok(book);
             }
             catch (Exception ex)
@@ -78,7 +108,23 @@ namespace BackEnd.Controllers
         {
             try
             {
+                var userIdClaim = User?.FindFirst("userId");
+                var userNameClaim = User?.FindFirst(ClaimTypes.NameIdentifier) ?? User?.FindFirst(JwtRegisteredClaimNames.Sub);
+                
+                // Get book info before deletion
+                var bookToDelete = await _bookService.GetBookById(id);
+                
                 var result = await _bookService.DeleteBook(id);
+                
+                // Log book deletion
+                await _loggerService.LogAsync(
+                    "info",
+                    $"Book Deleted: {bookToDelete.Title} | Author: {bookToDelete.Author}",
+                    "Library Management",
+                    userIdClaim?.Value,
+                    userNameClaim?.Value ?? "Unknown"
+                );
+                
                 return Ok(new { success = result });
             }
             catch (Exception ex)

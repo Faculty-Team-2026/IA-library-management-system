@@ -37,10 +37,10 @@ class LoggerService {
       this.addLog("error", args.join(" "), "Console");
     };
 
-    // Intercept console.warn
+    // Intercept console.warn - DISABLED (don't log warnings)
     console.warn = (...args: any[]) => {
       originalWarn(...args);
-      this.addLog("warning", args.join(" "), "Console");
+      // Don't log warnings to prevent spam from React Router and framework warnings
     };
 
     // Intercept console.info
@@ -86,7 +86,7 @@ class LoggerService {
       this.logs.shift();
     }
 
-    // Store in localStorage for persistence
+    // Store in sessionStorage for persistence
     this.persistLogs();
   }
 
@@ -128,15 +128,15 @@ class LoggerService {
    */
   clearLogs() {
     this.logs = [];
-    localStorage.removeItem("systemLogs");
+    sessionStorage.removeItem("systemLogs");
   }
 
   /**
-   * Persist logs to localStorage
+   * Persist logs to sessionStorage
    */
   private persistLogs() {
     try {
-      localStorage.setItem("systemLogs", JSON.stringify(this.logs));
+      sessionStorage.setItem("systemLogs", JSON.stringify(this.logs));
     } catch (error) {
       // Handle quota exceeded error
       if (
@@ -185,7 +185,7 @@ class LoggerService {
       const entriesToSend = logEntries || this.logs;
       if (entriesToSend.length === 0) return true;
 
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       if (!token) {
         console.warn("No token found. Logs not sent to backend.");
         return false;

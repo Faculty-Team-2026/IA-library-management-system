@@ -55,7 +55,7 @@ namespace BackEnd.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, "Error adding new membership");
+                _logger.LogError(ex, "Membership error: Failed to add new membership");
                 throw;
             }
         }
@@ -84,7 +84,7 @@ namespace BackEnd.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, $"Error editing membership with ID {id}");
+                _logger.LogError(ex, $"Membership error: Failed to edit membership | ID: {id}");
                 throw;
             }
         }
@@ -105,7 +105,7 @@ namespace BackEnd.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, $"Error deleting membership with ID {id}");
+                _logger.LogError(ex, $"Membership error: Failed to delete membership | ID: {id}");
                 throw;
             }
         }
@@ -171,7 +171,7 @@ namespace BackEnd.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, $"Error requesting membership for user {userId}");
+                _logger.LogError(ex, $"Membership error: Failed to request membership | User ID: {userId}");
                 throw;
             }
         }
@@ -217,7 +217,7 @@ namespace BackEnd.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, $"Error approving membership request {userMembershipId}");
+                _logger.LogError(ex, $"Membership error: Failed to approve request | Request ID: {userMembershipId}");
                 throw;
             }
         }
@@ -274,7 +274,7 @@ namespace BackEnd.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, $"Error rejecting membership request {userMembershipId}");
+                _logger.LogError(ex, $"Membership error: Failed to reject request | Request ID: {userMembershipId}");
                 throw;
             }
         }
@@ -302,7 +302,7 @@ namespace BackEnd.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, $"Error canceling membership request {userMembershipId}");
+                _logger.LogError(ex, $"Membership error: Failed to cancel request | Request ID: {userMembershipId}");
                 throw;
             }
         }
@@ -320,7 +320,7 @@ namespace BackEnd.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting pending membership requests");
+                _logger.LogError(ex, "Membership error: Failed to get pending membership requests");
                 throw;
             }
         }
@@ -339,7 +339,7 @@ namespace BackEnd.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error getting membership for user {userId}");
+                _logger.LogError(ex, $"Membership error: Failed to get membership | User ID: {userId}");
                 throw;
             }
         }

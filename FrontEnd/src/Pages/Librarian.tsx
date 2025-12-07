@@ -23,8 +23,8 @@ export const Librarian = () => {
 
   // Authentication check
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('userRole');
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    const role = sessionStorage.getItem('userRole') || localStorage.getItem('userRole');
     if (!token || role !== 'Librarian') {
       navigate('/auth/login');
       return;

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import InputField from "../../components/UI/InputField";
 import api from "../../Services/api";
 import { AxiosError } from "axios";
+import { startSessionHub } from "../../Services/sessionHub";
 import {
     containsXssRisk,
     isStrongPassword,
@@ -53,9 +54,11 @@ const Register = () => {
     });
     const [errors, setErrors] = useState<ValidationErrors>({});
     const [loading, setLoading] = useState(false);
+    const [generalError, setGeneralError] = useState<string>("");
+    const [successMessage, setSuccessMessage] = useState<string>("");
 
     useEffect(() => {
-        const role = localStorage.getItem("userRole");
+        const role = sessionStorage.getItem("userRole") || localStorage.getItem("userRole");
         if (role === "Admin") {
             navigate("/admin"); // Redirect admin to their dashboard
         } else if (role === "Librarian") {
@@ -134,11 +137,14 @@ const Register = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrors({});
+        setGeneralError("");
+        setSuccessMessage("");
         setLoading(true);
 
         const clientErrors = runClientValidation(formData);
         if (Object.keys(clientErrors).length > 0) {
             setErrors(clientErrors);
+            setGeneralError("Please fix the errors below before submitting.");
             setLoading(false);
             return;
         }
@@ -148,8 +154,8 @@ const Register = () => {
             password: sanitizeInput(formData.password, { maxLength: 128, trim: false }),
             firstName: sanitizeInput(formData.firstName, { maxLength: 60 }),
             lastName: sanitizeInput(formData.lastName, { maxLength: 60 }),
-            ssn: formData.ssn.replace(/\D/g, "").slice(0, 14),
-            phoneNumber: formData.phoneNumber.replace(/\D/g, "").slice(0, 11),
+            ssn: formData.ssn, // Already formatted as XXX-XX-XXXXXX
+            phoneNumber: formData.phoneNumber && formData.phoneNumber.length === 11 ? formData.phoneNumber : "",
             email: sanitizeInput(formData.email, { maxLength: 80 }),
             role: formData.role,
         };
@@ -158,16 +164,50 @@ const Register = () => {
             const response = await api.post("/Auth/register", payload);
 
             if (response.data) {
-                navigate("/auth/login", {
-                    state: {
-                        message: "Registration successful! Please sign in.",
-                    },
+                // Start session hub to listen for force logout events
+                startSessionHub(() => {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("userRole");
+                    localStorage.removeItem("userId");
+                    localStorage.removeItem("username");
+                    localStorage.removeItem("email");
+                    localStorage.removeItem("ssoProvider");
+                    window.location.href = "/login";
+                }).catch((err) => {
+                    console.warn("SessionHub connection error after registration:", err);
                 });
+
+                setSuccessMessage("✓ Registration successful! Redirecting to home page...");
+                // Navigate to landing page after successful registration
+                setTimeout(() => {
+                    navigate("/", {
+                        state: {
+                            message: "Registration successful! Welcome to Aalam Al-Kutub.",
+                        },
+                    });
+                }, 2000);
             }
         } catch (err: unknown) {
-            const error = err as AxiosError<ApiError>;
+            const error = err as AxiosError<any>;
+            console.error("Registration error details:", {
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: JSON.stringify(error.response?.data),
+                message: error.message,
+            });
+            
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
+                const errorMessages = Object.values(error.response.data.errors)
+                    .flat()
+                    .join(", ");
+                setGeneralError(`Validation error: ${errorMessages}`);
+            } else if (error.response?.data) {
+                const errorData = error.response.data;
+                const errorMsg = errorData.title || errorData.message || JSON.stringify(errorData);
+                setGeneralError(`Registration failed: ${errorMsg}`);
+            } else {
+                setGeneralError("An error occurred during registration. Please try again.");
             }
         } finally {
             setLoading(false);
@@ -191,6 +231,21 @@ const Register = () => {
                         </Link>
                     </p>
                 </div>
+
+                {/* Error Message */}
+                {generalError && (
+                    <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
+                        <p className="font-medium">❌ {generalError}</p>
+                    </div>
+                )}
+
+                {/* Success Message */}
+                {successMessage && (
+                    <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">
+                        <p className="font-medium">{successMessage}</p>
+                    </div>
+                )}
+
                 <form
                     onSubmit={handleSubmit}
                     className="space-y-6 flex flex-col"
@@ -240,37 +295,36 @@ const Register = () => {
                         label="Phone Number"
                         name="phoneNumber"
                         type="tel"
-                        placeholder="+20xxxxxxxxxx"
-                        value={
-                            formData.phoneNumber
-                                ? `+20${formData.phoneNumber.replace(/^0/, "")}`
-                                : ""
-                        }
+                        placeholder="01001234567"
+                        value={formData.phoneNumber}
                         onChange={(e) => {
-                            let value = e.target.value
-                                .replace(/^\+20/, "")
-                                .replace(/\D/g, "");
-                            value = value.slice(0, 10);
+                            let value = e.target.value.replace(/\D/g, "");
+                            value = value.slice(0, 11); // 11 digits max
                             setFormData((prev) => ({
                                 ...prev,
-                                phoneNumber: value.startsWith("0")
-                                    ? value
-                                    : `0${value}`,
+                                phoneNumber: value,
                             }));
                         }}
                         required
-                        error={errors.PhoneNumber?.[0]}
+                        error={
+                            formData.phoneNumber.length > 0 &&
+                            formData.phoneNumber.length !== 11
+                                ? "Phone number must be 11 digits (e.g., 01001234567)"
+                                : errors.PhoneNumber?.[0]
+                        }
                     />
 
                     <InputField
                         label="National ID"
                         name="ssn"
                         type="text"
+                        placeholder="12345678901234"
                         value={formData.ssn}
                         onChange={(e) => {
-                            const newValue = e.target.value
+                            let newValue = e.target.value
                                 .replace(/\D/g, "")
                                 .slice(0, 14);
+                            
                             setFormData((prev) => ({
                                 ...prev,
                                 ssn: newValue,

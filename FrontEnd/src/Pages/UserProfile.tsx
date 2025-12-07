@@ -53,7 +53,7 @@ const UserProfile: React.FC = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token') || localStorage.getItem('token');
                 if (!token) {
                     navigate('/auth/login');
                     return;
@@ -71,7 +71,6 @@ const UserProfile: React.FC = () => {
                 
                 try {
                     const historyResponse = await api.get('/Borrow/my-records');
-                    console.log('Borrow history response:', historyResponse.data);
                     setBorrowHistory(historyResponse.data);
                 } catch (err) {
                     console.error('Error fetching borrow history:', err);
@@ -121,8 +120,6 @@ const UserProfile: React.FC = () => {
                 Role: user.role
             };
 
-            console.log('Update data being sent:', updateData);
-
             if (!updateData.Username || !updateData.Email || !updateData.FirstName || !updateData.LastName) {
                 setError('Please fill in all required fields');
                 return;
@@ -139,9 +136,7 @@ const UserProfile: React.FC = () => {
             setIsEditing(false);
             setError(null);
         } catch (error: unknown) {
-            console.error('Error updating user:', error);
             const apiError = error as ApiError;
-            console.log('API Error Response:', apiError.response?.data);
             if (apiError.response?.data.errors) {
                 const errorMessages = Object.values(apiError.response.data.errors).flat();
                 setError(errorMessages.join(', '));

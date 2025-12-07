@@ -9,8 +9,8 @@ export const Home = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
-  const userRole = localStorage.getItem("userRole");
+  const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+  const userRole = sessionStorage.getItem("userRole") || localStorage.getItem("userRole");
 
   useEffect(() => {
     const fetchBooks = async () => {

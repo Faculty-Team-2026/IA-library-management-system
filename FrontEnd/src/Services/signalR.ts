@@ -19,10 +19,11 @@ export function startConnection(
 
   // Detect if running through ngrok; use proxy path when tunneling
   const isNgrok = typeof window !== 'undefined' && window.location.hostname.includes('ngrok');
-  const API_BASE = isNgrok ? "/api" : "http://localhost:5205";
+  // For ngrok, Vite proxy forwards `/chathub` to backend, so use relative path
+  const HUB_BASE = isNgrok ? "" : "http://localhost:5205";
   
   connection = new signalR.HubConnectionBuilder()
-    .withUrl(`${API_BASE}/chathub`, {
+    .withUrl(`${HUB_BASE}/chathub`, {
       skipNegotiation: false,
       transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
       withCredentials: false,

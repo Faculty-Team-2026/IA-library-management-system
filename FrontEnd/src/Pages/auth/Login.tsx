@@ -7,13 +7,17 @@ const Login = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const role = localStorage.getItem("userRole");
-        if (role === "Admin") {
-            navigate("/admin"); // Redirect admin to their dashboard
-        } else if (role === "Librarian") {
-            navigate("/librarian"); // Redirect librarian to their dashboard
-        } else if (role === "User") {
-            navigate("/"); // Redirect user to the landing page
+        // Check localStorage for remember me feature
+        const rememberMe = localStorage.getItem("rememberMe");
+        if (rememberMe === "true") {
+            const role = localStorage.getItem("userRole");
+            if (role === "Admin") {
+                navigate("/admin"); // Redirect admin to their dashboard
+            } else if (role === "Librarian") {
+                navigate("/librarian"); // Redirect librarian to their dashboard
+            } else if (role === "User") {
+                navigate("/"); // Redirect user to the landing page
+            }
         }
     }, [navigate]);
 

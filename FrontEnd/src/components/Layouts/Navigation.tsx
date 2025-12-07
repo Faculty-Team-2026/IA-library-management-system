@@ -14,12 +14,12 @@ export const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
-  // Check authentication status from localStorage
+  // Check authentication status from sessionStorage first, then localStorage
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("userRole");
-    const id = localStorage.getItem("userId");
-    const username = localStorage.getItem("username");
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+    const role = sessionStorage.getItem("userRole") || localStorage.getItem("userRole");
+    const id = sessionStorage.getItem("userId") || localStorage.getItem("userId");
+    const username = sessionStorage.getItem("username") || localStorage.getItem("username");
 
     if (token && role && id && username) {
       setUser({ id, role, username });
@@ -43,8 +43,34 @@ export const Navigation = () => {
   }, [location]);
 
   const handleLogout = () => {
-    // Clear all localStorage items
-    localStorage.clear();
+    const username = sessionStorage.getItem("username") || localStorage.getItem("username") || "unknown";
+    
+    // Log logout
+    console.log(`[2025-12-07] Logout: ${username}`);
+    
+    // Call logout endpoint
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+    if (token) {
+      fetch("/api/Auth/logout", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      }).catch(() => {
+        // Logout endpoint might not be critical
+      });
+    }
+    
+    // Clear both sessionStorage and localStorage
+    sessionStorage.clear();
+    localStorage.removeItem("rememberMe");
+    localStorage.removeItem("ssoProvider");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("username");
+    localStorage.removeItem("email");
     
     // Reset user state
     setUser(null);

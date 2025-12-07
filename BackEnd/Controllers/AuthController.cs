@@ -12,11 +12,13 @@ namespace BackEnd.Controllers
     {
         private readonly IAuthService _authService;
         private readonly ILogger<AuthController> _logger;
+        private readonly ILoggerService _loggerService;
 
-        public AuthController(IAuthService authService, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger, ILoggerService loggerService)
         {
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         /// <summary>
@@ -64,6 +66,16 @@ namespace BackEnd.Controllers
                 _logger.LogInformation($"Processing login for username: {loginDTO.Username}");
                 var response = await _authService.Login(loginDTO, ipAddress);
                 _logger.LogInformation($"Login successful for username: {loginDTO.Username}");
+                
+                // Log to database
+                await _loggerService.LogAsync(
+                    "info",
+                    $"Login: {response.Username} | IP: {ipAddress}",
+                    "Authentication",
+                    response.Id.ToString(),
+                    response.Username
+                );
+                
                 return Ok(response);
             }
             catch (Exception ex)
@@ -125,6 +137,42 @@ namespace BackEnd.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            try
+            {
+                var userIdClaim = User?.FindFirst("userId");
+                var usernameClaim = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                
+                if (userIdClaim == null || usernameClaim == null)
+                    return Unauthorized(new { message = "User claims not found. Please log in again." });
+
+                var ipAddress = GetClientIpAddress();
+                var username = usernameClaim.Value;
+
+                _logger.LogInformation($"Logout: {username} | IP: {ipAddress}");
+
+                // Log to database
+                await _loggerService.LogAsync(
+                    "info",
+                    $"Logout: {username} | IP: {ipAddress}",
+                    "Authentication",
+                    userIdClaim.Value,
+                    username
+                );
+
+                return Ok(new { message = "Logout successful" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Logout error: {ex.Message}");
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
+
 

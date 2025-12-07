@@ -53,15 +53,13 @@ const UserSelectPlanDialouge: React.FC<{ onRequestSent?: () => void }> = ({ onRe
         
         // Fetch plans first
         const plansRes = await api.get<Membership[]>('/Membership');
-        console.log('Available plans:', plansRes.data);
         setPlans(plansRes.data);
 
         // Then try to fetch current membership
-        const userId = localStorage.getItem('userId');
+        const userId = sessionStorage.getItem('userId') || localStorage.getItem('userId');
         if (userId) {
           try {
             const membershipRes = await api.get<UserMembership>(`/Membership/user/${userId}`);
-            console.log('Current membership:', membershipRes.data);
             if (membershipRes.data) {
               setCurrentMembership(membershipRes.data);
               setShowPlanSelection(false);
@@ -104,8 +102,8 @@ const UserSelectPlanDialouge: React.FC<{ onRequestSent?: () => void }> = ({ onRe
     setError(null);
     setSuccess(null);
     try {
-      // Get userId from localStorage
-      const userId = localStorage.getItem('userId');
+      // Get userId from sessionStorage first, then localStorage
+      const userId = sessionStorage.getItem('userId') || localStorage.getItem('userId');
 
       if (!userId) {
         setError('User not logged in');
@@ -164,7 +162,6 @@ const UserSelectPlanDialouge: React.FC<{ onRequestSent?: () => void }> = ({ onRe
   }
 
   if (!showPlanSelection && currentMembership) {
-    console.log('Rendering current membership:', currentMembership);
     return (
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg max-w-lg mx-auto">
         <h2 className="text-xl font-semibold mb-4 text-gray-900">Current Membership Plan</h2>

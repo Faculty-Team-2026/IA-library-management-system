@@ -2,16 +2,19 @@ using BackEnd.Data;
 using BackEnd.DTOs;
 using BackEnd.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace BackEnd.Services
 {
     public class BorrowService : IBorrowService
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<BorrowService> _logger;
 
-        public BorrowService(ApplicationDbContext context)
+        public BorrowService(ApplicationDbContext context, ILogger<BorrowService> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<BorrowRequestDTO> RequestBorrow(long userId, long bookId)
@@ -86,6 +89,8 @@ namespace BackEnd.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                _logger.LogInformation($"Borrow request: User {userId} | Book {bookId}");
+
                 return new BorrowRequestDTO
                 {
                     Id = request.Id,
@@ -97,9 +102,10 @@ namespace BackEnd.Services
                     Status = request.Status
                 };
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Borrow error: Failed to request borrow | User {userId} | Book {bookId}");
                 throw;
             }
         }
@@ -198,9 +204,10 @@ namespace BackEnd.Services
                     Status = "Approved"
                 };
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Borrow error: Failed to approve request | Request {requestId}");
                 throw;
             }
         }
@@ -234,6 +241,8 @@ namespace BackEnd.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                _logger.LogInformation($"Borrow rejected: Request {requestId} | Book {request.BookId}");
+
                 return new BorrowRequestDTO
                 {
                     Id = request.Id,
@@ -245,60 +254,69 @@ namespace BackEnd.Services
                     Status = "Rejected"
                 };
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Borrow error: Failed to reject request | Request {requestId}");
                 throw;
             }
         }
 
         public async Task<BorrowRecordDTO> ReturnBook(long recordId, long librarianId)
         {
-            var record = await _context.BorrowRecords
-                .Include(br => br.User)
-                .Include(br => br.Book)
-                .FirstOrDefaultAsync(br => br.Id == recordId);
-
-            if (record == null)
+            try
             {
-                throw new Exception("Borrow record not found");
+                var record = await _context.BorrowRecords
+                    .Include(br => br.User)
+                    .Include(br => br.Book)
+                    .FirstOrDefaultAsync(br => br.Id == recordId);
+
+                if (record == null)
+                {
+                    throw new Exception("Borrow record not found");
+                }
+
+                if (record.Status == "Returned")
+                {
+                    throw new Exception("Book has already been returned");
+                }
+
+                record.Status = "Returned";
+                record.ReturnDate = DateTime.UtcNow;
+                _context.BorrowRecords.Update(record);
+
+                if (record.Book != null)
+                {
+                    var book = record.Book;
+                    book.Quantity++;
+                    book.Available = true;
+                    _context.Books.Update(book);
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Book returned: Record {recordId} | User {record.UserId} | Book {record.BookId}");
+
+                return new BorrowRecordDTO
+                {
+                    Id = record.Id,
+                    UserId = record.UserId,
+                    Username = record.User.Username,
+                    BookId = record.BookId,
+                    BookTitle = record.BookTitle ?? record.Book?.Title,
+                    BookAuthor = record.BookAuthor ?? record.Book?.Author,
+                    BookISBN = record.BookISBN ?? record.Book?.ISBN,
+                    BorrowDate = record.BorrowDate,
+                    DueDate = record.DueDate,
+                    ReturnDate = record.ReturnDate,
+                    Status = record.Status
+                };
             }
-
-            if (record.Status == "Returned")
+            catch (Exception ex)
             {
-                throw new Exception("Book has already been returned");
+                _logger.LogError(ex, $"Borrow error: Failed to return book | Record {recordId}");
+                throw;
             }
-
-          
-
-            record.Status = "Returned";
-            record.ReturnDate = DateTime.UtcNow;
-            _context.BorrowRecords.Update(record);
-
-            if (record.Book != null)
-            {
-                var book = record.Book;
-                book.Quantity++;
-                book.Available = true;
-                _context.Books.Update(book);
-            }
-
-            await _context.SaveChangesAsync();
-
-            return new BorrowRecordDTO
-            {
-                Id = record.Id,
-                UserId = record.UserId,
-                Username = record.User.Username,
-                BookId = record.BookId,
-                BookTitle = record.BookTitle ?? record.Book?.Title,
-                BookAuthor = record.BookAuthor ?? record.Book?.Author,
-                BookISBN = record.BookISBN ?? record.Book?.ISBN,
-                BorrowDate = record.BorrowDate,
-                DueDate = record.DueDate,
-                ReturnDate = record.ReturnDate,
-                Status = record.Status
-            };
         }
 
         public async Task<IEnumerable<BorrowRecordDTO>> GetBorrowRecords()

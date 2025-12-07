@@ -13,11 +13,11 @@ const ChatePage: React.FC = () => {
   const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Get user info from localStorage
-  const username = sanitizeInput(localStorage.getItem("username") || "", {
+  // Get user info from sessionStorage first, then localStorage
+  const username = sanitizeInput(sessionStorage.getItem("username") || localStorage.getItem("username") || "", {
     maxLength: 50,
   });
-  const userId = Number(localStorage.getItem("userId"));
+  const userId = Number(sessionStorage.getItem("userId") || localStorage.getItem("userId"));
 
   useEffect(() => {
     if (!username || !userId) {

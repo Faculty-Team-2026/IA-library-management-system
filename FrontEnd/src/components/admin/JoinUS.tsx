@@ -38,7 +38,6 @@ const JoinUS = ({ containerClassName = "" }: JoinUSProps) => {
             setError(null);
             const res = await api.get('/Librarian/requests?status=Pending');
             setRequests(res.data);
-            console.log(res.data);
         } catch (err: unknown) {
             const apiError = err as ApiError;
             setError(apiError.response?.data?.message || 'Failed to fetch librarian requests');

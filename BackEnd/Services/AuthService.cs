@@ -7,11 +7,13 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR;
 
 namespace BackEnd.Services
 {
     public class AuthService : IAuthService
     {
+        private readonly IHubContext<BackEnd.Hubs.SessionHub, BackEnd.Hubs.ISessionHubClient> _sessionHubContext;
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly IValidationService _validationService;
@@ -25,7 +27,8 @@ namespace BackEnd.Services
             IValidationService validationService,
             IEncryptionService encryptionService,
             IRateLimitingService rateLimitingService,
-            ILogger<AuthService> logger)
+            ILogger<AuthService> logger,
+            IHubContext<BackEnd.Hubs.SessionHub, BackEnd.Hubs.ISessionHubClient> sessionHubContext)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
@@ -33,6 +36,7 @@ namespace BackEnd.Services
             _encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
             _rateLimitingService = rateLimitingService ?? throw new ArgumentNullException(nameof(rateLimitingService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _sessionHubContext = sessionHubContext ?? throw new ArgumentNullException(nameof(sessionHubContext));
         }
 
         public async Task<AuthResponseDTO> Login(LoginDTO loginDTO, string ipAddress = "unknown")
@@ -53,7 +57,7 @@ namespace BackEnd.Services
             // Check rate limiting based on IP address and username
             if (_rateLimitingService.IsAccountLockedOut(username, ipAddress))
             {
-                _logger.LogWarning($"Login attempt blocked for {username} from {ipAddress} - account/IP locked out");
+                _logger.LogWarning($"Login blocked: {username} | IP: {ipAddress}");
                 throw new Exception("Too many login attempts. Try again later.");
             }
 
@@ -61,7 +65,7 @@ namespace BackEnd.Services
             int delaySeconds = _rateLimitingService.GetLoginDelaySeconds(ipAddress);
             if (delaySeconds > 0)
             {
-                _logger.LogInformation($"Applying {delaySeconds}s delay for {ipAddress} due to previous failed attempts");
+                _logger.LogInformation($"Login delay: {username} | IP: {ipAddress} | Delay: {delaySeconds}s");
                 await Task.Delay(delaySeconds * 1000);
             }
 
@@ -72,8 +76,7 @@ namespace BackEnd.Services
                 int remainingAttempts = _rateLimitingService.GetRemainingAttempts(username, ipAddress);
                 
                 _logger.LogWarning(
-                    $"Failed login attempt for user '{username}' from {ipAddress}. " +
-                    $"Remaining attempts: {remainingAttempts}"
+                    $"Login failed: {username} | IP: {ipAddress} | Attempts remaining: {remainingAttempts}"
                 );
 
                 throw new Exception($"Invalid username or password. Attempts remaining: {remainingAttempts}");
@@ -84,8 +87,7 @@ namespace BackEnd.Services
             {
                 var activeIPs = _rateLimitingService.GetUserActiveIPs(username);
                 _logger.LogError(
-                    $"⚠️ SECURITY ALERT: Account '{username}' accessed from {activeIPs.Count} different IPs in 24 hours. " +
-                    $"This may indicate account compromise. Active IPs: {string.Join(", ", activeIPs)}"
+                    $"⚠️ SECURITY ALERT: {username} | IP: {ipAddress} | Multiple IPs: {activeIPs.Count} in 24h | Active IPs: {string.Join(", ", activeIPs)}"
                 );
                 // Could implement additional security measures here like requiring email verification
             }
@@ -94,9 +96,35 @@ namespace BackEnd.Services
             _rateLimitingService.ResetLoginAttempts(username, ipAddress);
             _rateLimitingService.RecordSuccessfulLogin(username, ipAddress);
             
-            _logger.LogInformation($"Successful login for user '{username}' from {ipAddress}");
+            // If user is already logged in from a different device, send force logout to previous session
+            if (!string.IsNullOrEmpty(user.LastActiveToken) && user.LastLoginTime.HasValue)
+            {
+                // Only force logout if the new login is from a different device/IP
+                if (user.LastLoginDevice != ipAddress)
+                {
+                    _logger.LogInformation($"Force logout: {username} | Previous IP: {user.LastLoginDevice} | New IP: {ipAddress}");
+                    try
+                    {
+                        await _sessionHubContext.Clients.User(user.Id.ToString()).ForceLogout(user.Id.ToString());
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"Failed to send force logout signal (user may not be connected): {ex.Message}");
+                        // Don't fail the login if the force logout signal fails
+                    }
+                }
+            }
+            
+            _logger.LogInformation($"Login: {username} | IP: {ipAddress}");
 
             var token = GenerateJwtToken(user);
+            
+            // Update user's session information
+            user.LastActiveToken = token;
+            user.LastLoginTime = DateTime.UtcNow;
+            user.LastLoginDevice = ipAddress;
+            await _context.SaveChangesAsync();
+            
             return new AuthResponseDTO
             {
                 Token = token,
@@ -168,6 +196,13 @@ namespace BackEnd.Services
             await _context.SaveChangesAsync();
 
             var token = GenerateJwtToken(user);
+            
+            // Update user's session information (same as login)
+            user.LastActiveToken = token;
+            user.LastLoginTime = DateTime.UtcNow;
+            user.LastLoginDevice = "unknown"; // We don't have IP during registration
+            await _context.SaveChangesAsync();
+            
             return new AuthResponseDTO
             {
                 Token = token,
@@ -232,7 +267,8 @@ namespace BackEnd.Services
                 new Claim(JwtRegisteredClaimNames.Sub, user.Username),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(ClaimTypes.Role, user.Role),
-                new Claim("userId", user.Id.ToString(), ClaimValueTypes.Integer64)
+                new Claim("userId", user.Id.ToString(), ClaimValueTypes.Integer64),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString(), ClaimValueTypes.Integer64)
             };
 
             var token = new JwtSecurityToken(

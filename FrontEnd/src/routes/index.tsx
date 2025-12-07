@@ -32,58 +32,66 @@ const ErrorFallback = () => {
   );
 };
 
-export const router = createBrowserRouter([
+export const router = createBrowserRouter(
+  [
+    {
+      path: "/",
+      element: <RootLayout />,
+      errorElement: <ErrorFallback />,
+      children: [
+        { path: "/", element: <Home /> },
+        { path: "/explore", element: <ExploreBooks /> },
+        { path: "/book/:id", element: <BookDetail /> },
+        { path: "/plans", element: <Services /> },
+        {
+          path: "/admin",
+          element: (
+            <ProtectedRoute requiredRole="Admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          ),
+          errorElement: <ErrorFallback />,
+        },
+        {
+          path: "/librarian",
+          element: (
+            <ProtectedRoute requiredRole="Librarian">
+              <Librarian />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/chat",
+          element: (
+            <ProtectedRoute>
+              <ChatePage />
+            </ProtectedRoute>
+          ),
+        },
+      ],
+    },
+    {
+      path: "/auth",
+      element: <AuthLayout />,
+      errorElement: <ErrorFallback />,
+      children: [
+        { path: "login", element: <Login /> },
+        { path: "register", element: <Register /> },
+        {
+          path: "user/:id",
+          element: (
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          ),
+        },
+      ],
+    },
+  ],
   {
-    path: "/",
-    element: <RootLayout />,
-    errorElement: <ErrorFallback />,
-    children: [
-      { path: "/", element: <Home /> },
-      { path: "/explore", element: <ExploreBooks /> },
-      { path: "/book/:id", element: <BookDetail /> },
-      { path: "/plans", element: <Services /> },
-      {
-        path: "/admin",
-        element: (
-          <ProtectedRoute requiredRole="Admin">
-            <AdminDashboard />
-          </ProtectedRoute>
-        ),
-        errorElement: <ErrorFallback />,
-      },
-      {
-        path: "/librarian",
-        element: (
-          <ProtectedRoute requiredRole="Librarian">
-            <Librarian />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "/chat",
-        element: (
-          <ProtectedRoute>
-            <ChatePage />
-          </ProtectedRoute>
-        ),
-      },
-    ],
-  },
-  {
-    path: "/auth",
-    element: <AuthLayout />,
-    errorElement: <ErrorFallback />,
-    children: [
-      { path: "login", element: <Login /> },
-      { path: "register", element: <Register /> },
-      {
-        path: "user/:id",
-        element: (
-          <ProtectedRoute>
-            <UserProfile />
-          </ProtectedRoute>
-        ),
-      },
-    ],
-  },
-]);
+    future: {
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    },
+  }
+);

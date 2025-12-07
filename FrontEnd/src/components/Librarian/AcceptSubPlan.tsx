@@ -59,7 +59,7 @@ const AcceptSubPlan: React.FC = () => {
   };
 
   const getUserId = (): number | null => {
-    const userId = localStorage.getItem('userId');
+    const userId = sessionStorage.getItem('userId') || localStorage.getItem('userId');
     if (!userId) return null;
     const parsedId = parseInt(userId);
     return isNaN(parsedId) ? null : parsedId;

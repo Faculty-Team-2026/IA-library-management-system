@@ -118,15 +118,17 @@ const LoginForm = () => {
       const { token, role, id, username } = await response.json();
       const safeUsername = sanitizeInput(username, { maxLength: 64 });
 
-      // Store authentication data
-      localStorage.setItem("token", token);
-      localStorage.setItem("userRole", role);
-      localStorage.setItem("userId", id.toString());
-      localStorage.setItem("username", safeUsername);
+      // Store authentication data in sessionStorage (cleared when tab closes)
+      sessionStorage.setItem("token", token);
+      sessionStorage.setItem("userRole", role);
+      sessionStorage.setItem("userId", id.toString());
+      sessionStorage.setItem("username", safeUsername);
 
-      // If remember me is checked, store the token in a more persistent way
+      // If remember me is checked, also store in localStorage for future sessions
       if (formData.rememberMe) {
         localStorage.setItem("rememberMe", "true");
+        localStorage.setItem("userRole", role);
+        localStorage.setItem("userId", id.toString());
       }
 
       // Redirect based on role

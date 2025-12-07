@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRefresh, faDownload, faCopy, faTrash } from "@fortawesome/free-solid-svg-icons";
-import loggerService from "../../Services/LoggerService";
+import api from "../../Services/api";
 
 interface LogEntry {
+  id?: number;
   timestamp: string;
   level: string;
   message: string;
   source: string;
+  userId?: string;
+  username?: string;
+  createdAt?: string;
 }
 
 interface SystemLoggerProps {
@@ -24,18 +28,27 @@ const SystemLogger: React.FC<SystemLoggerProps> = ({ containerClassName = "" }) 
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [statistics, setStatistics] = useState<any>(null);
 
-  // Fetch logs from LoggerService
-  const fetchLogs = () => {
+  // Fetch logs from backend API
+  const fetchLogs = async () => {
     setLoading(true);
     try {
-      const allLogs = loggerService.getLogs();
+      const response = await api.get("/Logs?limit=100");
+      const allLogs = response.data;
       setLogs(allLogs);
-      setStatistics(loggerService.getStatistics());
+      
+      // Calculate statistics
+      const stats = {
+        errors: allLogs.filter((l: LogEntry) => l.level === "error").length,
+        warnings: allLogs.filter((l: LogEntry) => l.level === "warning").length,
+        info: allLogs.filter((l: LogEntry) => l.level === "info").length,
+        debug: allLogs.filter((l: LogEntry) => l.level === "debug").length,
+      };
+      setStatistics(stats);
+      
       applyFilters(allLogs, filterLevel, searchTerm);
       setError(null);
-    } catch (err) {
-      console.error("Error fetching logs:", err);
-      setError("Failed to fetch logs");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to fetch logs");
     } finally {
       setLoading(false);
     }
@@ -51,7 +64,8 @@ const SystemLogger: React.FC<SystemLoggerProps> = ({ containerClassName = "" }) 
     if (search) {
       filtered = filtered.filter((log) =>
         log.message.toLowerCase().includes(search.toLowerCase()) ||
-        log.source.toLowerCase().includes(search.toLowerCase())
+        log.source.toLowerCase().includes(search.toLowerCase()) ||
+        log.username?.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -112,13 +126,18 @@ const SystemLogger: React.FC<SystemLoggerProps> = ({ containerClassName = "" }) 
     alert("Logs copied to clipboard!");
   };
 
-  const handleClearLogs = () => {
-    if (window.confirm("Are you sure you want to clear all logs?")) {
-      loggerService.clearLogs();
-      setLogs([]);
-      setFilteredLogs([]);
-      setError(null);
-      setStatistics(null);
+  const handleClearLogs = async () => {
+    if (window.confirm("Are you sure you want to clear all logs? This action cannot be undone.")) {
+      try {
+        await api.delete("/Logs");
+        setLogs([]);
+        setFilteredLogs([]);
+        setError(null);
+        setStatistics(null);
+        alert("Logs cleared successfully");
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Failed to clear logs");
+      }
     }
   };
 
@@ -154,36 +173,36 @@ const SystemLogger: React.FC<SystemLoggerProps> = ({ containerClassName = "" }) 
 
   return (
     <div className={`w-full ${containerClassName}`}>
-      <div className="bg-white rounded-xl shadow-md border p-6">
+      <div className="bg-white rounded-xl shadow-md border p-4">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">System Logger</h2>
+        <div className="flex flex-col gap-3 mb-4">
+          <h2 className="text-xl font-bold text-gray-800">System Logger</h2>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={fetchLogs}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               <FontAwesomeIcon icon={faRefresh} className={loading ? "animate-spin" : ""} />
               Refresh
             </button>
             <button
               onClick={handleDownloadLogs}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
             >
               <FontAwesomeIcon icon={faDownload} />
               Download
             </button>
             <button
               onClick={handleCopyLogs}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
             >
               <FontAwesomeIcon icon={faCopy} />
               Copy
             </button>
             <button
               onClick={handleClearLogs}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
             >
               <FontAwesomeIcon icon={faTrash} />
               Clear
@@ -192,47 +211,47 @@ const SystemLogger: React.FC<SystemLoggerProps> = ({ containerClassName = "" }) 
         </div>
 
         {/* Controls */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1">
+        <div className="flex flex-col gap-2 mb-3">
+          <div className="flex flex-wrap items-center gap-2">
             <input
               type="text"
-              placeholder="Search logs..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 min-w-[200px] px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <select
+              value={filterLevel}
+              onChange={(e) => setFilterLevel(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Levels</option>
+              <option value="error">Errors</option>
+              <option value="warning">Warnings</option>
+              <option value="info">Info</option>
+              <option value="debug">Debug</option>
+            </select>
+            <label className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-700 whitespace-nowrap">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="w-4 h-4 cursor-pointer"
+              />
+              <span>Auto Refresh</span>
+            </label>
           </div>
-          <select
-            value={filterLevel}
-            onChange={(e) => setFilterLevel(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Levels</option>
-            <option value="error">Errors</option>
-            <option value="warning">Warnings</option>
-            <option value="info">Info</option>
-            <option value="debug">Debug</option>
-          </select>
-          <label className="flex items-center gap-2 px-4 py-2">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="w-4 h-4 cursor-pointer"
-            />
-            <span className="text-sm text-gray-700">Auto Refresh</span>
-          </label>
         </div>
 
         {/* Error message */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+          <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-red-800 text-xs">
             {error}
           </div>
         )}
 
         {/* Logs count */}
-        <div className="mb-4 flex flex-wrap gap-4 text-sm">
+        <div className="mb-2 flex flex-wrap gap-3 text-xs">
           <div className="text-gray-600">
             Showing {filteredLogs.length} log entries (Total: {logs.length})
           </div>
@@ -252,7 +271,7 @@ const SystemLogger: React.FC<SystemLoggerProps> = ({ containerClassName = "" }) 
         </div>
 
         {/* Logs container */}
-        <div className="space-y-2 max-h-[600px] overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+        <div className="space-y-1 max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
           {loading && filteredLogs.length === 0 ? (
             <div className="flex justify-center items-center py-8">
               <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-2"></span>
@@ -265,24 +284,31 @@ const SystemLogger: React.FC<SystemLoggerProps> = ({ containerClassName = "" }) 
           ) : (
             filteredLogs.map((log, index) => (
               <div
-                key={index}
-                className={`p-3 rounded-lg mb-2 ${getLevelColor(log.level)}`}
+                key={log.id || index}
+                className={`p-2 rounded mb-1 ${getLevelColor(log.level)}`}
               >
-                <div className="flex flex-col md:flex-row md:items-center gap-2">
-                  <span
-                    className={`inline-block px-2 py-1 rounded text-xs font-semibold ${getLevelBadgeColor(
-                      log.level
-                    )}`}
-                  >
-                    {log.level.toUpperCase()}
-                  </span>
-                  <span className="text-xs text-gray-500 font-mono">
-                    {new Date(log.timestamp).toLocaleString()}
-                  </span>
-                  <span className="text-xs font-semibold text-gray-700">
-                    [{log.source}]
-                  </span>
-                  <span className="text-sm flex-1">{log.message}</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span
+                      className={`inline-block px-1 py-0.5 rounded text-xs font-semibold ${getLevelBadgeColor(
+                        log.level
+                      )}`}
+                    >
+                      {log.level.toUpperCase()}
+                    </span>
+                    <span className="text-xs text-gray-500 font-mono">
+                      {new Date(log.timestamp).toLocaleString()}
+                    </span>
+                    <span className="text-xs font-semibold text-gray-700">
+                      [{log.source}]
+                    </span>
+                    {log.username && (
+                      <span className="text-xs bg-purple-100 text-purple-800 px-1 py-0.5 rounded">
+                        👤 {log.username}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs">{log.message}</span>
                 </div>
               </div>
             ))
@@ -290,9 +316,9 @@ const SystemLogger: React.FC<SystemLoggerProps> = ({ containerClassName = "" }) 
         </div>
 
         {/* Footer info */}
-        <div className="mt-4 text-xs text-gray-500">
-          <p>Last refreshed: {new Date().toLocaleTimeString()}</p>
-          <p>Auto-refresh is {autoRefresh ? "enabled" : "disabled"}</p>
+        <div className="mt-2 text-xs text-gray-500 flex gap-3">
+          <span>Last refreshed: {new Date().toLocaleTimeString()}</span>
+          <span>Auto-refresh: {autoRefresh ? "enabled" : "disabled"}</span>
         </div>
       </div>
     </div>

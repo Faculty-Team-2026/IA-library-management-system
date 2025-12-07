@@ -55,7 +55,7 @@ const AdminDashboard = () => {
   const [originalUser, setOriginalUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token") || localStorage.getItem("token");
 
   // States for the map
   const [locations, setLocations] = useState<Location[]>([]);

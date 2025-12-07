@@ -1,16 +1,19 @@
 ﻿using BackEnd.Data;
 using BackEnd.DTOs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace BackEnd.Services
 {
     public class LibrarianService : ILibrarianService
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<LibrarianService> _logger;
 
-        public LibrarianService(ApplicationDbContext context)
+        public LibrarianService(ApplicationDbContext context, ILogger<LibrarianService> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IEnumerable<LibrarianRequestDTO>> GetLibrarianRequests(string status)
@@ -32,74 +35,94 @@ namespace BackEnd.Services
 
         public async Task<LibrarianRequestDTO> ApproveLibrarianRequest(long requestId, long adminId)
         {
-            var request = await _context.LibrarianRequests
-                .Include(lr => lr.User)
-                .FirstOrDefaultAsync(lr => lr.Id == requestId);
-
-            if (request == null)
+            try
             {
-                throw new Exception("Librarian request not found");
+                var request = await _context.LibrarianRequests
+                    .Include(lr => lr.User)
+                    .FirstOrDefaultAsync(lr => lr.Id == requestId);
+
+                if (request == null)
+                {
+                    throw new Exception("Librarian request not found");
+                }
+
+                if (request.Status != "Pending")
+                {
+                    throw new Exception("Only pending requests can be approved");
+                }
+
+                var user = request.User;
+                if (user.Role != "User")
+                {
+                    throw new Exception("Only regular users can be promoted to librarian");
+                }
+
+                user.Role = "Librarian";
+                _context.Users.Update(user);
+
+                request.Status = "Approved";
+                _context.LibrarianRequests.Update(request);
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Librarian approved: {user.Username} | Request {requestId}");
+
+                return new LibrarianRequestDTO
+                {
+                    Id = request.Id,
+                    UserId = request.UserId,
+                    Username = user.Username,
+                    RequestDate = request.RequestDate,
+                    RequestMessage = request.RequestMessage,
+                    Status = request.Status
+                };
             }
-
-            if (request.Status != "Pending")
+            catch (Exception ex)
             {
-                throw new Exception("Only pending requests can be approved");
+                _logger.LogError(ex, $"Librarian error: Failed to approve request | Request {requestId}");
+                throw;
             }
-
-            var user = request.User;
-            if (user.Role != "User")
-            {
-                throw new Exception("Only regular users can be promoted to librarian");
-            }
-
-            user.Role = "Librarian";
-            _context.Users.Update(user);
-
-            request.Status = "Approved";
-            _context.LibrarianRequests.Update(request);
-
-            await _context.SaveChangesAsync();
-
-            return new LibrarianRequestDTO
-            {
-                Id = request.Id,
-                UserId = request.UserId,
-                Username = user.Username,
-                RequestDate = request.RequestDate,
-                RequestMessage = request.RequestMessage,
-                Status = request.Status
-            };
         }
 
         public async Task<LibrarianRequestDTO> RejectLibrarianRequest(long requestId, long adminId)
         {
-            var request = await _context.LibrarianRequests
-                .Include(lr => lr.User)
-                .FirstOrDefaultAsync(lr => lr.Id == requestId);
-
-            if (request == null)
+            try
             {
-                throw new Exception("Librarian request not found");
+                var request = await _context.LibrarianRequests
+                    .Include(lr => lr.User)
+                    .FirstOrDefaultAsync(lr => lr.Id == requestId);
+
+                if (request == null)
+                {
+                    throw new Exception("Librarian request not found");
+                }
+
+                if (request.Status != "Pending")
+                {
+                    throw new Exception("Only pending requests can be rejected");
+                }
+
+                request.Status = "Rejected";
+                _context.LibrarianRequests.Update(request);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Librarian rejected: {request.User.Username} | Request {requestId}");
+
+                return new LibrarianRequestDTO
+                {
+                    Id = request.Id,
+                    UserId = request.UserId,
+                    Username = request.User.Username,
+                    RequestDate = request.RequestDate,
+                    RequestMessage = request.RequestMessage,
+                    Status = request.Status
+                };
             }
-
-            if (request.Status != "Pending")
+            catch (Exception ex)
             {
-                throw new Exception("Only pending requests can be rejected");
+                _logger.LogError(ex, $"Librarian error: Failed to reject request | Request {requestId}");
+                throw;
             }
-
-            request.Status = "Rejected";
-            _context.LibrarianRequests.Update(request);
-            await _context.SaveChangesAsync();
-
-            return new LibrarianRequestDTO
-            {
-                Id = request.Id,
-                UserId = request.UserId,
-                Username = request.User.Username,
-                RequestDate = request.RequestDate,
-                RequestMessage = request.RequestMessage,
-                Status = request.Status
-            };
         }
 
         public async Task<IEnumerable<UserDTO>> GetAllLibrarians()
@@ -119,30 +142,40 @@ namespace BackEnd.Services
 
         public async Task<bool> DeleteLibrarian(long librarianId)
         {
-            var librarian = await _context.Users.FindAsync(librarianId);
-            if (librarian == null)
+            try
             {
-                throw new Exception("Librarian not found");
-            }
+                var librarian = await _context.Users.FindAsync(librarianId);
+                if (librarian == null)
+                {
+                    throw new Exception("Librarian not found");
+                }
 
-            if (librarian.Role != "Librarian")
+                if (librarian.Role != "Librarian")
+                {
+                    throw new Exception("User is not a librarian");
+                }
+
+                // Check if librarian has any pending actions
+                var hasPendingRequests = await _context.BorrowRequests
+                    .AnyAsync(br => br.Status == "Pending");
+
+                if (hasPendingRequests)
+                {
+                    throw new Exception("Cannot delete librarian with pending requests");
+                }
+
+                librarian.Role = "User";
+                _context.Users.Update(librarian);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Librarian deleted: {librarian.Username} | ID: {librarianId}");
+                return true;
+            }
+            catch (Exception ex)
             {
-                throw new Exception("User is not a librarian");
+                _logger.LogError(ex, $"Librarian error: Failed to delete librarian | ID: {librarianId}");
+                throw;
             }
-
-            // Check if librarian has any pending actions
-            var hasPendingRequests = await _context.BorrowRequests
-                .AnyAsync(br => br.Status == "Pending");
-
-            if (hasPendingRequests)
-            {
-                throw new Exception("Cannot delete librarian with pending requests");
-            }
-
-            librarian.Role = "User";
-            _context.Users.Update(librarian);
-            await _context.SaveChangesAsync();
-            return true;
         }
     }
 }

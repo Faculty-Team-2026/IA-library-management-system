@@ -108,7 +108,7 @@ namespace BackEnd.Services
         }
 
         /// <summary>
-        /// Validates SSN format (XXX-XX-XXXX)
+        /// Validates SSN format (14 digits)
         /// </summary>
         public ValidationResult ValidateSSN(string ssn)
         {
@@ -118,8 +118,8 @@ namespace BackEnd.Services
             // Remove hyphens
             string cleaned = ssn.Replace("-", "");
 
-            if (!Regex.IsMatch(cleaned, @"^\d{9}$"))
-                return new ValidationResult { IsValid = false, Message = "SSN must be in format XXX-XX-XXXX" };
+            if (!Regex.IsMatch(cleaned, @"^\d{14}$"))
+                return new ValidationResult { IsValid = false, Message = "SSN must be exactly 14 digits" };
 
             return new ValidationResult { IsValid = true, Message = "SSN is valid" };
         }

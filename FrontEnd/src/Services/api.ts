@@ -15,8 +15,6 @@ const API_BASE_URL = isNgrok
   ? "/api"  // ngrok: Use Vite proxy to backend
   : "http://localhost:5205/api";  // PC/Local Network: Direct connection
 
-console.log(`API Base URL: ${API_BASE_URL} (isLocalhost: ${isLocalhost}, isNgrok: ${isNgrok})`);
-
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,7 +27,7 @@ const api = axios.create({
 // Add request interceptor to include JWT token in headers
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -58,38 +56,38 @@ api.interceptors.response.use(
 // ============================================================================
 
 /**
- * Clear all authentication data from localStorage
+ * Clear all authentication data from sessionStorage
  */
 const clearAllAuth = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("userRole");
-  localStorage.removeItem("userId");
-  localStorage.removeItem("username");
-  localStorage.removeItem("email");
-  localStorage.removeItem("ssoProvider");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("userRole");
+  sessionStorage.removeItem("userId");
+  sessionStorage.removeItem("username");
+  sessionStorage.removeItem("email");
+  sessionStorage.removeItem("ssoProvider");
 };
 
 /**
- * Store regular authentication data in localStorage
+ * Store regular authentication data in sessionStorage
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const storeAuth = (response: Record<string, any>) => {
-  localStorage.setItem("token", response.token);
-  localStorage.setItem("userRole", response.role);
-  localStorage.setItem("userId", response.id?.toString() || "");
-  localStorage.setItem("username", response.username);
+  sessionStorage.setItem("token", response.token);
+  sessionStorage.setItem("userRole", response.role);
+  sessionStorage.setItem("userId", response.id?.toString() || "");
+  sessionStorage.setItem("username", response.username);
 };
 
 /**
- * Store SSO authentication data in localStorage
+ * Store SSO authentication data in sessionStorage
  */
 const storeSSOAuth = (ssoResponse: SSOResponse) => {
-  localStorage.setItem("token", ssoResponse.token);
-  localStorage.setItem("userRole", ssoResponse.role);
-  localStorage.setItem("userId", ssoResponse.id.toString());
-  localStorage.setItem("username", ssoResponse.username);
-  localStorage.setItem("email", ssoResponse.email);
-  localStorage.setItem("ssoProvider", ssoResponse.ssoProvider);
+  sessionStorage.setItem("token", ssoResponse.token);
+  sessionStorage.setItem("userRole", ssoResponse.role);
+  sessionStorage.setItem("userId", ssoResponse.id.toString());
+  sessionStorage.setItem("username", ssoResponse.username);
+  sessionStorage.setItem("email", ssoResponse.email);
+  sessionStorage.setItem("ssoProvider", ssoResponse.ssoProvider);
 };
 
 // ============================================================================
@@ -237,14 +235,14 @@ export const ssoService = {
    * Check if user is logged in via SSO
    */
   isSSOLogin: (): boolean => {
-    return !!localStorage.getItem("ssoProvider");
+    return !!sessionStorage.getItem("ssoProvider");
   },
 
   /**
    * Get SSO provider name
    */
   getSSOProvider: (): string | null => {
-    return localStorage.getItem("ssoProvider");
+    return sessionStorage.getItem("ssoProvider");
   },
 
   /**

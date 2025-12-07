@@ -50,7 +50,7 @@ namespace BackEnd.Services
                     
                     if (recentIpAttempts.Count >= _maxAttemptsPerIP)
                     {
-                        _logger.LogWarning($"IP {ipAddress} locked out - {recentIpAttempts.Count} attempts in {_lockoutDuration.TotalMinutes} minutes");
+                        _logger.LogWarning($"Login blocked: IP {ipAddress} | Attempts: {recentIpAttempts.Count}/{_maxAttemptsPerIP}");
                         _ipLoginAttempts[ipAddress] = recentIpAttempts;
                         return true;
                     }
@@ -66,7 +66,7 @@ namespace BackEnd.Services
                     
                     if (recentUsernameAttempts.Count >= _maxAttemptsPerUsername)
                     {
-                        _logger.LogWarning($"Account {username} locked out - {recentUsernameAttempts.Count} attempts in {_lockoutDuration.TotalMinutes} minutes");
+                        _logger.LogWarning($"Login blocked: {username} | Attempts: {recentUsernameAttempts.Count}/{_maxAttemptsPerUsername}");
                         _usernameLoginAttempts[username] = recentUsernameAttempts;
                         return true;
                     }
@@ -133,18 +133,14 @@ namespace BackEnd.Services
                 int usernameAttemptsCount = _usernameLoginAttempts[username].Count;
                 
                 _logger.LogWarning(
-                    $"Failed login attempt for user '{username}' from IP {ipAddress}. " +
-                    $"IP attempts: {ipAttemptsCount}/{_maxAttemptsPerIP}, " +
-                    $"Username attempts: {usernameAttemptsCount}/{_maxAttemptsPerUsername}"
+                    $"Login failed: {username} | IP: {ipAddress} | IP attempts: {ipAttemptsCount}/{_maxAttemptsPerIP} | Username attempts: {usernameAttemptsCount}/{_maxAttemptsPerUsername}"
                 );
 
                 // Alert on excessive attempts
                 if (ipAttemptsCount >= 3 || usernameAttemptsCount >= 3)
                 {
                     _logger.LogError(
-                        $"⚠️ SECURITY ALERT: Multiple failed login attempts detected! " +
-                        $"Username: {username}, IP: {ipAddress}, " +
-                        $"IP attempts: {ipAttemptsCount}, Username attempts: {usernameAttemptsCount}"
+                        $"⚠️ SECURITY ALERT: {username} | IP: {ipAddress} | IP attempts: {ipAttemptsCount} | Username attempts: {usernameAttemptsCount}"
                     );
                 }
             }
@@ -190,7 +186,7 @@ namespace BackEnd.Services
                         _usernameLoginAttempts[username].Clear();
                 }
 
-                _logger.LogInformation($"Login attempts reset for user '{username}' from IP {ipAddress}");
+                _logger.LogInformation($"Login reset: {username} | IP: {ipAddress}");
             }
         }
 

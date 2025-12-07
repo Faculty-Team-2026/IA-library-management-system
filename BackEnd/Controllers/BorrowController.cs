@@ -2,6 +2,8 @@
 using BackEnd.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 // Controllers/BorrowController.cs
 
@@ -13,10 +15,12 @@ namespace BackEnd.Controllers
     public class BorrowController : ControllerBase
     {
         private readonly IBorrowService _borrowService;
+        private readonly ILoggerService _loggerService;
 
-        public BorrowController(IBorrowService borrowService)
+        public BorrowController(IBorrowService borrowService, ILoggerService loggerService)
         {
             _borrowService = borrowService ?? throw new ArgumentNullException(nameof(borrowService));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         [HttpPost("request/{bookId}")]
@@ -31,7 +35,18 @@ namespace BackEnd.Controllers
                 if (!long.TryParse(userIdClaim.Value, out var userId))
                     return BadRequest(new { message = "Invalid user ID format" });
 
+                var userNameClaim = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier) ?? User?.FindFirst(JwtRegisteredClaimNames.Sub);
                 var request = await _borrowService.RequestBorrow(userId, bookId);
+                
+                // Log borrow request
+                await _loggerService.LogAsync(
+                    "info",
+                    $"Borrow Request: Book ID {bookId}",
+                    "Book Borrowing",
+                    userId.ToString(),
+                    userNameClaim?.Value ?? "Unknown"
+                );
+                
                 return Ok(request);
             }
             catch (Exception ex)
@@ -55,7 +70,19 @@ namespace BackEnd.Controllers
             try
             {
                 var librarianId = long.Parse(User.FindFirst("userId").Value);
+                var librarianName = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+                
                 var request = await _borrowService.ApproveBorrowRequest(requestId, librarianId);
+                
+                // Log borrow approval
+                await _loggerService.LogAsync(
+                    "info",
+                    $"Borrow Request Approved: {request.BookTitle} | User: {request.Username}",
+                    "Book Borrowing",
+                    librarianId.ToString(),
+                    librarianName ?? "Librarian"
+                );
+                
                 return Ok(request);
             }
             catch (Exception ex)
@@ -71,7 +98,19 @@ namespace BackEnd.Controllers
             try
             {
                 var librarianId = long.Parse(User.FindFirst("userId").Value);
+                var librarianName = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+                
                 var request = await _borrowService.RejectBorrowRequest(requestId, librarianId);
+                
+                // Log borrow rejection
+                await _loggerService.LogAsync(
+                    "info",
+                    $"Borrow Request Rejected: {request.BookTitle} | User: {request.Username}",
+                    "Book Borrowing",
+                    librarianId.ToString(),
+                    librarianName ?? "Librarian"
+                );
+                
                 return Ok(request);
             }
             catch (Exception ex)
@@ -87,7 +126,19 @@ namespace BackEnd.Controllers
             try
             {
                 var librarianId = long.Parse(User.FindFirst("userId").Value);
+                var librarianName = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+                
                 var record = await _borrowService.ReturnBook(recordId, librarianId);
+                
+                // Log book return
+                await _loggerService.LogAsync(
+                    "info",
+                    $"Book Returned: {record.BookTitle} | User: {record.Username}",
+                    "Book Borrowing",
+                    librarianId.ToString(),
+                    librarianName ?? "Librarian"
+                );
+                
                 return Ok(record);
             }
             catch (Exception ex)

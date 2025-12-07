@@ -16,6 +16,18 @@ export default defineConfig({
         target: 'http://localhost:5205',
         changeOrigin: true,
         secure: false,
+      },
+      '/chathub': {
+        target: 'http://localhost:5205',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/sessionhub': {
+        target: 'http://localhost:5205',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
       }
     }
   }
