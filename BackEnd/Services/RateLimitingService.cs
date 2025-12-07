@@ -27,7 +27,7 @@ namespace BackEnd.Services
         private readonly int _maxAttemptsPerIP = 5;
         private readonly int _maxAttemptsPerUsername = 5;
         private readonly int _maxConcurrentIPsPerAccount = 10;
-        private readonly TimeSpan _lockoutDuration = TimeSpan.FromMinutes(15);
+        private readonly TimeSpan _lockoutDuration = TimeSpan.FromMinutes(1);
         private readonly TimeSpan _ipHistoryDuration = TimeSpan.FromHours(24);
         
         public RateLimitingService(ILogger<RateLimitingService> logger)

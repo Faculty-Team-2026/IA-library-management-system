@@ -150,10 +150,11 @@ internal class Program
         app.UseCors();
 
         app.UseAuthentication();
-        app.UseAuthorization();
-
-        // Enforce single active session per user
+        
+        // Enforce single active session per user (after authentication but before authorization)
         app.UseMiddleware<BackEnd.Middleware.SingleSessionMiddleware>();
+        
+        app.UseAuthorization();
 
         app.MapControllers();
 

@@ -20,6 +20,14 @@ namespace BackEnd.Middleware
 
         public async Task InvokeAsync(HttpContext context, ApplicationDbContext dbContext)
         {
+            // Skip authentication/login endpoints
+            var path = context.Request.Path.Value?.ToLower();
+            if (path != null && (path.Contains("/auth/login") || path.Contains("/auth/register") || path.Contains("/sso/")))
+            {
+                await _next(context);
+                return;
+            }
+
             var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Replace("Bearer ", "");
             if (!string.IsNullOrEmpty(token))
             {
