@@ -31,6 +31,8 @@ internal class Program
         builder.Services.AddScoped<IValidationService, ValidationService>();
         builder.Services.AddScoped<IEncryptionService, EncryptionService>();
         builder.Services.AddScoped<ILoggerService, LoggerService>();
+        builder.Services.AddScoped<IAccountLockoutService, AccountLockoutService>();
+        builder.Services.AddScoped<IAnomalyDetectionService, AnomalyDetectionService>();
         builder.Services.AddSingleton<IRateLimitingService, RateLimitingService>();
 
         builder.Services.Configure<FormOptions>(options =>
@@ -140,8 +142,8 @@ internal class Program
             // Referrer policy
             context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
             
-            // Content Security Policy (relaxed for mobile testing)
-            context.Response.Headers["Content-Security-Policy"] = "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';";
+            // Content Security Policy
+            context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
             
             await next();
         });

@@ -49,6 +49,11 @@ namespace BackEnd.Models
         public DateTime? LastLoginTime { get; set; } // Track last login timestamp
         public string? LastLoginDevice { get; set; } // Track the device/IP of last login
 
+        // Account lockout tracking
+        public int FailedLoginAttempts { get; set; } = 0;
+        public DateTime? LastFailedLoginTime { get; set; }
+        public DateTime? LockoutEnd { get; set; }
+
         // Navigation properties
         public virtual ICollection<BorrowRequest> BorrowRequests { get; set; } = new List<BorrowRequest>();
         public virtual ICollection<BorrowRecord> BorrowRecords { get; set; } = new List<BorrowRecord>();
