@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import InputField from "../../components/UI/InputField";
 import api from "../../Services/api";
 import { AxiosError } from "axios";
@@ -12,6 +12,7 @@ import {
     isValidUsername,
     sanitizeInput,
 } from "../../utils/validation";
+import { useAuth } from "../../hooks/useAuth";
 
 interface RegisterFormData {
     username: string;
@@ -34,14 +35,11 @@ interface ValidationErrors {
     Email?: string[];
 }
 
-interface ApiError {
-    errors: ValidationErrors;
-    status: number;
-    title: string;
-}
-
 const Register = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const { isAuthenticated, userRole, isLoading } = useAuth();
     const [formData, setFormData] = useState<RegisterFormData>({
         username: "",
         password: "",
@@ -57,16 +55,24 @@ const Register = () => {
     const [generalError, setGeneralError] = useState<string>("");
     const [successMessage, setSuccessMessage] = useState<string>("");
 
+    const redirectParam = searchParams.get("redirect");
+    const from = location.state?.from?.pathname || redirectParam || "/";
+
     useEffect(() => {
-        const role = sessionStorage.getItem("userRole") || localStorage.getItem("userRole");
-        if (role === "Admin") {
-            navigate("/admin"); // Redirect admin to their dashboard
-        } else if (role === "Librarian") {
-            navigate("/librarian"); // Redirect librarian to their dashboard
-        } else if (role === "User") {
-            navigate("/"); // Redirect user to the landing page
+        if (!isLoading && isAuthenticated) {
+            const hasExplicitRedirect = searchParams.get("redirect") !== null || location.state?.from;
+
+            if (!hasExplicitRedirect && userRole === "Admin") {
+                navigate("/admin", { replace: true });
+            } else if (!hasExplicitRedirect && userRole === "Librarian") {
+                navigate("/librarian", { replace: true });
+            } else {
+                navigate(from, { replace: true });
+            }
         }
-    }, [navigate]);
+    }, [isAuthenticated, userRole, isLoading, navigate, from, searchParams, location.state]);
+
+    if (isLoading) return null;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -154,7 +160,7 @@ const Register = () => {
             password: sanitizeInput(formData.password, { maxLength: 128, trim: false }),
             firstName: sanitizeInput(formData.firstName, { maxLength: 60 }),
             lastName: sanitizeInput(formData.lastName, { maxLength: 60 }),
-            ssn: formData.ssn, // Already formatted as XXX-XX-XXXXXX
+            ssn: formData.ssn,
             phoneNumber: formData.phoneNumber && formData.phoneNumber.length === 11 ? formData.phoneNumber : "",
             email: sanitizeInput(formData.email, { maxLength: 80 }),
             role: formData.role,
@@ -164,7 +170,6 @@ const Register = () => {
             const response = await api.post("/Auth/register", payload);
 
             if (response.data) {
-                // Start session hub to listen for force logout events
                 startSessionHub(() => {
                     localStorage.removeItem("token");
                     localStorage.removeItem("userRole");
@@ -178,7 +183,6 @@ const Register = () => {
                 });
 
                 setSuccessMessage("✓ Registration successful! Redirecting to login page...");
-                // Navigate to login page after successful registration
                 setTimeout(() => {
                     navigate("/auth/login", {
                         state: {
@@ -189,13 +193,6 @@ const Register = () => {
             }
         } catch (err: unknown) {
             const error = err as AxiosError<any>;
-            console.error("Registration error details:", {
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                data: JSON.stringify(error.response?.data),
-                message: error.message,
-            });
-            
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
                 const errorMessages = Object.values(error.response.data.errors)
@@ -232,14 +229,12 @@ const Register = () => {
                     </p>
                 </div>
 
-                {/* Error Message */}
                 {generalError && (
                     <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
                         <p className="font-medium">❌ {generalError}</p>
                     </div>
                 )}
 
-                {/* Success Message */}
                 {successMessage && (
                     <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">
                         <p className="font-medium">{successMessage}</p>
@@ -299,7 +294,7 @@ const Register = () => {
                         value={formData.phoneNumber}
                         onChange={(e) => {
                             let value = e.target.value.replace(/\D/g, "");
-                            value = value.slice(0, 11); // 11 digits max
+                            value = value.slice(0, 11);
                             setFormData((prev) => ({
                                 ...prev,
                                 phoneNumber: value,
@@ -308,7 +303,7 @@ const Register = () => {
                         required
                         error={
                             formData.phoneNumber.length > 0 &&
-                            formData.phoneNumber.length !== 11
+                                formData.phoneNumber.length !== 11
                                 ? "Phone number must be 11 digits (e.g., 01001234567)"
                                 : errors.PhoneNumber?.[0]
                         }
@@ -324,7 +319,7 @@ const Register = () => {
                             let newValue = e.target.value
                                 .replace(/\D/g, "")
                                 .slice(0, 14);
-                            
+
                             setFormData((prev) => ({
                                 ...prev,
                                 ssn: newValue,
@@ -333,7 +328,7 @@ const Register = () => {
                         required
                         error={
                             formData.ssn.length > 0 &&
-                            formData.ssn.length !== 14
+                                formData.ssn.length !== 14
                                 ? "National ID must be exactly 14 digits"
                                 : errors.SSN?.[0]
                         }

@@ -5,15 +5,13 @@ import axios from "axios";
 // ============================================================================
 
 // Auto-detect environment
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const isLocalIP = /^192\.168\./.test(window.location.hostname) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname) || /^10\./.test(window.location.hostname);
 const isNgrok = window.location.hostname.includes('ngrok');
 
-// When on ngrok, use /api-proxy which Vite will proxy to localhost:5205
-// When on localhost/local IP, use direct connection
-const API_BASE_URL = isNgrok
-  ? "/api"  // ngrok: Use Vite proxy to backend
-  : "http://localhost:5205/api";  // PC/Local Network: Direct connection
+// Priority: 
+// 1. Environment Variable (Production/Custom)
+// 2. ngrok proxy (Local testing)
+// 3. Localhost direct (Development)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (isNgrok ? "/api" : "http://localhost:5205/api");
 
 // Create axios instance with default config
 const api = axios.create({
@@ -42,10 +40,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle 401 Unauthorized - redirect to login
-    if (error.response?.status === 401) {
+    // Handle 401 Unauthorized - redirect to login only if we were previously logged in
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+    if (error.response?.status === 401 && token) {
       clearAllAuth();
-      window.location.href = "/login";
+      const currentPath = window.location.pathname;
+      // Don't redirect if we are already on a login/register page to avoid loops
+      if (!currentPath.includes('/auth/')) {
+        window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+      }
     }
     return Promise.reject(error);
   }
@@ -56,7 +59,7 @@ api.interceptors.response.use(
 // ============================================================================
 
 /**
- * Clear all authentication data from sessionStorage
+ * Clear all authentication data from both storage types
  */
 const clearAllAuth = () => {
   sessionStorage.removeItem("token");
@@ -65,29 +68,49 @@ const clearAllAuth = () => {
   sessionStorage.removeItem("username");
   sessionStorage.removeItem("email");
   sessionStorage.removeItem("ssoProvider");
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("userId");
+  localStorage.removeItem("username");
+  localStorage.removeItem("email");
+  localStorage.removeItem("ssoProvider");
+  localStorage.removeItem("rememberMe");
 };
 
 /**
- * Store regular authentication data in sessionStorage
+ * Store regular authentication data
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const storeAuth = (response: Record<string, any>) => {
-  sessionStorage.setItem("token", response.token);
-  sessionStorage.setItem("userRole", response.role);
-  sessionStorage.setItem("userId", response.id?.toString() || "");
-  sessionStorage.setItem("username", response.username);
+const storeAuth = (response: Record<string, any>, rememberMe: boolean = false) => {
+  const storage = rememberMe ? localStorage : sessionStorage;
+
+  storage.setItem("token", response.token);
+  storage.setItem("userRole", response.role);
+  storage.setItem("userId", response.id?.toString() || "");
+  storage.setItem("username", response.username);
+
+  if (rememberMe) {
+    localStorage.setItem("rememberMe", "true");
+  }
 };
 
 /**
- * Store SSO authentication data in sessionStorage
+ * Store SSO authentication data
  */
-const storeSSOAuth = (ssoResponse: SSOResponse) => {
-  sessionStorage.setItem("token", ssoResponse.token);
-  sessionStorage.setItem("userRole", ssoResponse.role);
-  sessionStorage.setItem("userId", ssoResponse.id.toString());
-  sessionStorage.setItem("username", ssoResponse.username);
-  sessionStorage.setItem("email", ssoResponse.email);
-  sessionStorage.setItem("ssoProvider", ssoResponse.ssoProvider);
+const storeSSOAuth = (ssoResponse: SSOResponse, rememberMe: boolean = true) => {
+  const storage = rememberMe ? localStorage : sessionStorage;
+
+  storage.setItem("token", ssoResponse.token);
+  storage.setItem("userRole", ssoResponse.role);
+  storage.setItem("userId", ssoResponse.id.toString());
+  storage.setItem("username", ssoResponse.username);
+  storage.setItem("email", ssoResponse.email);
+  storage.setItem("ssoProvider", ssoResponse.ssoProvider);
+
+  if (rememberMe) {
+    localStorage.setItem("rememberMe", "true");
+  }
 };
 
 // ============================================================================

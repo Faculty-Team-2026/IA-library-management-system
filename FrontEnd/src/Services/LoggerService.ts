@@ -1,4 +1,4 @@
-// Service to capture and store system logs
+// Service to capture and store API logs only (security logging)
 
 interface LogEntry {
   timestamp: string;
@@ -10,62 +10,51 @@ interface LogEntry {
 class LoggerService {
   private logs: LogEntry[] = [];
   private maxLogs = 1000;
+  private originalFetch: typeof fetch;
 
   constructor() {
-    this.initializeConsoleLogging();
+    this.originalFetch = window.fetch.bind(window);
+    this.initializeApiLogging();
   }
 
   /**
-   * Initialize console logging interception
+   * Initialize API logging by intercepting fetch requests
    */
-  private initializeConsoleLogging() {
-    // Store original console methods
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-    const originalInfo = console.info;
+  private initializeApiLogging() {
+    window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      const method = init?.method || "GET";
+      const startTime = Date.now();
 
-    // Intercept console.log
-    console.log = (...args: any[]) => {
-      originalLog(...args);
-      this.addLog("info", args.join(" "), "Console");
+      // Skip logging for log sync requests to avoid infinite loop
+      const isLogSyncRequest = url.toLowerCase().includes("/logs") || url.toLowerCase().includes("/api/logs");
+
+      try {
+        const response = await this.originalFetch(input, init);
+        const duration = Date.now() - startTime;
+
+        // Only log non-log-sync API calls
+        if (!isLogSyncRequest) {
+          this.addLog(
+            response.ok ? "info" : "error",
+            `${method} ${url} - ${response.status} (${duration}ms)`,
+            "API"
+          );
+        }
+
+        return response;
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        if (!isLogSyncRequest) {
+          this.addLog(
+            "error",
+            `${method} ${url} - FAILED: ${error} (${duration}ms)`,
+            "API"
+          );
+        }
+        throw error;
+      }
     };
-
-    // Intercept console.error
-    console.error = (...args: any[]) => {
-      originalError(...args);
-      this.addLog("error", args.join(" "), "Console");
-    };
-
-    // Intercept console.warn - DISABLED (don't log warnings)
-    console.warn = (...args: any[]) => {
-      originalWarn(...args);
-      // Don't log warnings to prevent spam from React Router and framework warnings
-    };
-
-    // Intercept console.info
-    console.info = (...args: any[]) => {
-      originalInfo(...args);
-      this.addLog("info", args.join(" "), "Console");
-    };
-
-    // Capture unhandled errors
-    window.addEventListener("error", (event: ErrorEvent) => {
-      this.addLog(
-        "error",
-        `${event.message} at ${event.filename}:${event.lineno}`,
-        "ErrorHandler"
-      );
-    });
-
-    // Capture unhandled promise rejections
-    window.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
-      this.addLog(
-        "error",
-        `Unhandled Promise Rejection: ${event.reason}`,
-        "UnhandledRejection"
-      );
-    });
   }
 
   /**
@@ -202,7 +191,8 @@ class LoggerService {
         
         for (const log of batch) {
           try {
-            const response = await fetch(`${apiBase}/logs`, {
+            // Use originalFetch to avoid logging the log sync requests
+            const response = await this.originalFetch(`${apiBase}/logs`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

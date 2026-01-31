@@ -1,18 +1,17 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Book } from "../types/book";
+import api from "../Services/api";
 import axios from "axios";
 import BorrowRequestDialog from "../components/Book/BorrowRequestDialog";
 import { Pause, Play, X } from "lucide-react";
-
-// Align API base with ngrok/localhost setup used across the app
-const isNgrok = typeof window !== "undefined" && window.location.hostname.includes("ngrok");
-axios.defaults.baseURL = isNgrok
-    ? "/api"
-    : import.meta.env.VITE_API_BASE_URL || "http://localhost:5205/api";
+import { useAuth } from "../hooks/useAuth";
 
 export const BookDetail = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { isAuthenticated } = useAuth();
     const [book, setBook] = useState<Book | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [showBorrowDialog, setShowBorrowDialog] = useState(false);
@@ -21,7 +20,7 @@ export const BookDetail = () => {
 
     const fetchBook = async () => {
         try {
-            const response = await axios.get(`/Books/${id}`);
+            const response = await api.get(`/Books/${id}`);
             setBook(response.data);
             setError(null); // Clear any previous errors
         } catch (err) {
@@ -40,7 +39,7 @@ export const BookDetail = () => {
             utterance.lang = "en-US"; // Set the language
             utterance.rate = 1; // Set the speed of speech (1 is normal)
             utterance.pitch = 1; // Set the pitch of the voice
-            
+
             const voices = speechSynthesis.getVoices();
             const selectedVoice = voices.find(voice => voice.lang === "en-US") || voices[0];
             if (selectedVoice) {
@@ -49,10 +48,10 @@ export const BookDetail = () => {
 
             // Set the state to true when speech starts
             utterance.onstart = () => setIsSpeaking(true);
-            
+
             // Set the state to false when speech ends
             utterance.onend = () => setIsSpeaking(false);
-            
+
             speechSynthesis.speak(utterance);
         } else {
             console.error("No description available to read.");
@@ -150,11 +149,10 @@ export const BookDetail = () => {
                         {/* Book availability badge */}
                         <div className="absolute top-6 right-6">
                             <div
-                                className={`px-4 py-2 rounded-full font-medium text-sm ${
-                                    book.available
-                                        ? "bg-green-100 text-green-800 border border-green-200"
-                                        : "bg-red-100 text-red-800 border border-red-200"
-                                }`}
+                                className={`px-4 py-2 rounded-full font-medium text-sm ${book.available
+                                    ? "bg-green-100 text-green-800 border border-green-200"
+                                    : "bg-red-100 text-red-800 border border-red-200"
+                                    }`}
                             >
                                 {book.available ? "Available" : "Unavailable"}
                             </div>
@@ -189,16 +187,23 @@ export const BookDetail = () => {
 
                             {/* Borrow button */}
                             <button
-                                className={`w-full mt-6 px-6 py-4 rounded-xl font-medium text-lg transition-all transform hover:scale-105 ${
-                                    book.available
+                                className={`w-full mt-6 px-6 py-4 rounded-xl font-medium text-lg transition-all transform hover:scale-105 ${book.available
+                                    ? isAuthenticated
                                         ? "bg-secondary hover:bg-zinc-950 transition duration-300 text-white shadow-lg hover:shadow-xl"
-                                        : "bg-gray-300 cursor-not-allowed text-gray-600"
-                                }`}
+                                        : "bg-amber-600 hover:bg-amber-700 text-white shadow-lg hover:shadow-xl"
+                                    : "bg-gray-300 cursor-not-allowed text-gray-600"
+                                    }`}
                                 disabled={!book.available}
-                                onClick={() => setShowBorrowDialog(true)}
+                                onClick={() => {
+                                    if (isAuthenticated) {
+                                        setShowBorrowDialog(true);
+                                    } else {
+                                        navigate(`/auth/login?redirect=${encodeURIComponent(location.pathname)}`, { state: { from: location } });
+                                    }
+                                }}
                             >
                                 {book.available
-                                    ? "Borrow Now"
+                                    ? isAuthenticated ? "Borrow Now" : "Login to Borrow"
                                     : "Currently Unavailable"}
                             </button>
 

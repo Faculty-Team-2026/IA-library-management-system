@@ -1,5 +1,6 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -15,12 +16,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRole,
 }) => {
   const location = useLocation();
-  // Check sessionStorage first (current session), then localStorage (remembered session)
-  const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-  const userRole = sessionStorage.getItem("userRole") || localStorage.getItem("userRole");
+  const { isAuthenticated, userRole, isLoading } = useAuth();
+
+  // Show nothing or a spinner while checking auth status
+  if (isLoading) {
+    return null; // Or a loading spinner component
+  }
 
   // Check if user is authenticated
-  if (!token) {
+  if (!isAuthenticated) {
     // Redirect to login with return URL
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }

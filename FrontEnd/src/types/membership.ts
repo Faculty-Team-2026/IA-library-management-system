@@ -7,4 +7,5 @@ export interface Membership {
   description?: string;
   maxFamilyMembers?: number | undefined;
   requiresApproval: boolean;
+  isFamilyPlan?: boolean;
 }

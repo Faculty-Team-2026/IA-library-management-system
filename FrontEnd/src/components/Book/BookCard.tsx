@@ -1,7 +1,8 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { Book } from "../../types/book";
 import BorrowRequestDialog from "./BorrowRequestDialog";
+import { useAuth } from "../../hooks/useAuth";
 
 interface BookCardProps {
   book: Book;
@@ -10,6 +11,8 @@ interface BookCardProps {
 
 export const BookCard = ({ book, onBorrowSuccess }: BookCardProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const [isBorrowDialogOpen, setIsBorrowDialogOpen] = useState(false);
 
   const handleLearnMore = () => {
@@ -18,6 +21,10 @@ export const BookCard = ({ book, onBorrowSuccess }: BookCardProps) => {
 
   const handleBorrowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate(`/auth/login?redirect=${encodeURIComponent(location.pathname)}`);
+      return;
+    }
     setIsBorrowDialogOpen(true);
   };
 
@@ -51,11 +58,10 @@ export const BookCard = ({ book, onBorrowSuccess }: BookCardProps) => {
             )}
             <div className="flex items-center gap-2 mb-2">
               <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  book.available && book.quantity > 0
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-red-100 text-red-800"
-                }`}
+                className={`px-3 py-1 rounded-full text-xs font-medium ${book.available && book.quantity > 0
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-red-100 text-red-800"
+                  }`}
               >
                 {book.available && book.quantity > 0
                   ? "Available"
@@ -75,13 +81,14 @@ export const BookCard = ({ book, onBorrowSuccess }: BookCardProps) => {
             >
               Learn More
             </button>
-            {/* Only show Borrow if available and quantity > 0 */}
+            {/* Show Borrow button if available */}
             {book.available && book.quantity > 0 && (
               <button
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                className={`flex-1 ${isAuthenticated ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-600 hover:bg-amber-700"
+                  } text-white font-medium py-2 px-2 rounded-lg transition-colors duration-200 text-sm`}
                 onClick={handleBorrowClick}
               >
-                Borrow
+                {isAuthenticated ? "Borrow" : "Login to Borrow"}
               </button>
             )}
           </div>

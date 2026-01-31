@@ -1,34 +1,39 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { BookCard } from "../components/Book/BookCard";
 import { Book } from "../types/book";
 import api from "../Services/api";
 import HomeMapView from "../components/maps/HomeMapView";
+import { useAuth } from "../hooks/useAuth";
 
 export const Home = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-  const userRole = sessionStorage.getItem("userRole") || localStorage.getItem("userRole");
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
         const response = await api.get("/Books");
-        setBooks(response.data);
-      } catch (error) {
-        console.error("Error fetching books:", error);
+        if (Array.isArray(response.data)) {
+          setBooks(response.data);
+        } else {
+          console.error("Home: Received non-array books data:", response.data);
+          setBooks([]);
+        }
+      } catch (err) {
+        console.error("Error fetching books:", err);
         setError("Failed to fetch books. Please try again later.");
       }
     };
     fetchBooks();
   }, []);
 
-  // Sort books alphabetically by title, with a fallback for undefined titles
-  const sortedBooks = [...books].sort((a, b) =>
-    (a.title || "").localeCompare(b.title || "")
-  );
+  // Sort books alphabetically by title
+  const sortedBooks = useMemo(() => {
+    return [...books].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  }, [books]);
 
   return (
     <div className="w-full min-h-screen bg-gray-50">
@@ -47,7 +52,7 @@ export const Home = () => {
             <div className="flex justify-center lg:justify-start">
               <Link
                 to="/explore"
-                className="inline-block font-bold bg-gradient-to-r from-emerald-600 to-teal-500 text-white hover:text-white hover:from-teal-500 hover:to-emerald-400 text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-md transition-all text-sm sm:text-base lg:text-lg"
+                className="inline-block font-bold bg-gradient-to-r from-emerald-600 to-teal-500 text-white hover:text-white hover:from-teal-500 hover:to-emerald-400 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-md transition-all text-sm sm:text-base lg:text-lg"
               >
                 Explore Books
               </Link>
@@ -114,28 +119,26 @@ export const Home = () => {
         </div>
       </section>
 
-      {/* Popular Books Section - Only visible to Users */}
-      {userRole === "User" && (
-        <section className="mt-10 px-4 sm:px-10 lg:px-60 w-full bg-white text-black">
-          <div className="w-full mx-auto">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl text-left font-poppins font-bold italic mb-8 lg:mb-14 text-primary tracking-tight drop-shadow">
-              Popular Books
-            </h2>
-            {error ? (
-              <p className="text-center text-red-500">{error}</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 justify-items-center">
-                {sortedBooks.slice(0, 6).map((book) => (
-                  <BookCard book={book} key={book.id} />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+      {/* Popular Books Section - Now visible to all */}
+      <section className="mt-10 px-4 sm:px-10 lg:px-60 w-full bg-white text-black">
+        <div className="w-full mx-auto">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl text-left font-poppins font-bold italic mb-8 lg:mb-14 text-primary tracking-tight drop-shadow">
+            Popular Books
+          </h2>
+          {error ? (
+            <p className="text-center text-red-500">{error}</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 justify-items-center">
+              {sortedBooks.slice(0, 6).map((book) => (
+                <BookCard book={book} key={book.id} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
-      {/* Join Club Section */}
-      {!token && (
+      {/* Join Club Section - Only for guests */}
+      {!isAuthenticated && !isLoading && (
         <section className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
           <div className="max-w-4xl mx-auto bg-gradient-to-r from-[#2c3e50] to-[#4a6b8a] text-white rounded-xl p-6 sm:p-8 lg:p-12 text-center shadow-lg">
             <h2 className="text-2xl font-poppins sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6">
@@ -167,14 +170,15 @@ export const Home = () => {
         </div>
       </section>
 
-      {token && (
+      {/* Chat Button - Visible to logged in users */}
+      {isAuthenticated && (
         <button
           onClick={() => navigate("/chat")}
           className="fixed bottom-4 sm:bottom-8 right-4 sm:right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg p-4 sm:p-5 flex items-center justify-center transition-all duration-300 group"
           title="Open Community Chat"
         >
           <span className="text-xl sm:text-2xl">💬</span>
-          <span className="ml-2 opacity-0 sm:opacity-100 group-hover:opacity-200 transition-opacity text-sm sm:text-base font-semibold">
+          <span className="ml-2 opacity-0 sm:opacity-100 group-hover:opacity-100 transition-opacity text-sm sm:text-base font-semibold">
             Chat
           </span>
         </button>

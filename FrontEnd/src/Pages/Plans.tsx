@@ -1,7 +1,8 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api from '../Services/api';
 import { Membership } from '../types/membership';
+import { useAuth } from '../hooks/useAuth';
 
 // Types
 interface PlanStyle {
@@ -36,9 +37,10 @@ const ErrorMessage = ({ message }: { message: string }) => (
     </div>
 );
 
-const PlanCard = ({ plan, style }: { plan: Membership; style: PlanStyle }) => {
+const PlanCard = ({ plan, style, isAuthenticated, userId }: { plan: Membership; style: PlanStyle; isAuthenticated: boolean; userId: string | null }) => {
     const annualPrice = plan.price ? Math.round(plan.price * 12) : 'Contact';
     const monthlyPrice = plan.price ?? 'Contact';
+    const location = useLocation();
 
     return (
         <div className={`bg-gradient-to-br ${style.gradient} rounded-2xl shadow-lg overflow-hidden text-white transform hover:scale-105 transition-all flex flex-col min-h-[700px]`}>
@@ -56,7 +58,7 @@ const PlanCard = ({ plan, style }: { plan: Membership; style: PlanStyle }) => {
                 <div className="border-t border-white/20 pt-6">
                     <div className="text-gray-100 mb-4">
                         <p className="mb-4">
-                            {plan.isFamilyPlan 
+                            {plan.isFamilyPlan
                                 ? `This plan includes all Premium benefits for up to ${plan.maxFamilyMembers} family members`
                                 : `You can borrow up to ${plan.borrowLimit} books per month`}
                         </p>
@@ -90,10 +92,11 @@ const PlanCard = ({ plan, style }: { plan: Membership; style: PlanStyle }) => {
             </div>
             <div className="p-8 pt-0">
                 <Link
-                    to="/auth/user/:id"
+                    to={isAuthenticated ? `/auth/user/${userId}` : `/auth/login`}
+                    state={!isAuthenticated ? { from: location } : undefined}
                     className={`block w-full text-center px-6 py-3 bg-white ${style.text} rounded-lg hover:bg-gray-100 transition-colors font-medium`}
                 >
-                    Select Plan
+                    {isAuthenticated ? 'Select Plan' : 'Login to Select'}
                 </Link>
             </div>
         </div>
@@ -104,6 +107,7 @@ export const Services = () => {
     const [plans, setPlans] = useState<Membership[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { isAuthenticated, userId } = useAuth();
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -153,10 +157,12 @@ export const Services = () => {
                             key={plan.membershipType}
                             plan={plan}
                             style={PLAN_STYLES[index % PLAN_STYLES.length]}
+                            isAuthenticated={isAuthenticated}
+                            userId={userId}
                         />
                     ))}
                 </div>
             </div>
         </div>
     );
-}; 
+};

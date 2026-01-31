@@ -3,15 +3,18 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import "./index.css";
 import { router } from "./routes";
-import "./Services/LoggerService"; // Initialize logger service to capture all console logs
 import loggerService from "./Services/LoggerService";
 import { startSessionHub } from "./Services/sessionHub";
+import { AuthProvider } from "./context/AuthContext";
 
-// Send logs to backend every 30 seconds
+// Send API logs to backend every 30 seconds (only if logged in)
 setInterval(() => {
-  loggerService.sendLogsToBackend().catch((error) => {
-    console.warn("Failed to sync logs to backend:", error);
-  });
+  const token = sessionStorage.getItem("token");
+  if (token) {
+    loggerService.sendLogsToBackend().catch(() => {
+      // Silently fail - don't spam console
+    });
+  }
 }, 30000);
 
 // Only start session hub if user is already logged in
@@ -31,12 +34,14 @@ if (token) {
     localStorage.removeItem("username");
     localStorage.removeItem("email");
     localStorage.removeItem("ssoProvider");
-    window.location.href = "/login";
+    window.location.href = "/auth/login";
   });
 }
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} future={{ v7_startTransition: true }} />
+    </AuthProvider>
   </StrictMode>
 );

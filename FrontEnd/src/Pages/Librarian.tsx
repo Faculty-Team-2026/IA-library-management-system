@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { 
-  faBook, 
-  faExchangeAlt, 
-  faRotateLeft, 
-  faCrown, 
-  faUserPlus 
+import {
+  faBook,
+  faExchangeAlt,
+  faRotateLeft,
+  faCrown,
+  faUserPlus
 } from "@fortawesome/free-solid-svg-icons";
 import BookManagement from "../components/Book/BookManagement";
 import ManageMemberShip from "../components/MemberShip/ManageMemberShip";
@@ -15,22 +15,15 @@ import SeeReturnRequest from "../components/Librarian/SeeReturnRequst";
 import AcceptSubPlan from '../components/Librarian/AcceptSubPlan';
 
 export const Librarian = () => {
-  const navigate = useNavigate();
   const [selected, setSelected] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [touchStartX, setTouchStartX] = useState(0);
 
-  // Authentication check
+  // Authentication checked by ProtectedRoute
   useEffect(() => {
-    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-    const role = sessionStorage.getItem('userRole') || localStorage.getItem('userRole');
-    if (!token || role !== 'Librarian') {
-      navigate('/auth/login');
-      return;
-    }
     setLoading(false);
-  }, [navigate]);
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
@@ -85,7 +78,7 @@ export const Librarian = () => {
     {
       name: "Approve Subscriptions",
       icon: faUserPlus,
-      content: <AcceptSubPlan/>,
+      content: <AcceptSubPlan />,
     },
   ];
 
@@ -101,7 +94,7 @@ export const Librarian = () => {
   }
 
   return (
-    <div 
+    <div
       className="relative min-h-screen flex flex-col md:flex-row bg-gray-50"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -137,7 +130,7 @@ export const Librarian = () => {
         {/* Navigation Header with Close Button */}
         <div className="flex items-center justify-between p-4 border-b border-blue-100">
           <h2 className="text-lg font-bold text-blue-800">NAVIGATION</h2>
-          <button 
+          <button
             className="md:hidden p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
             onClick={() => setIsSidebarOpen(false)}
             aria-label="Close menu"
@@ -151,11 +144,10 @@ export const Librarian = () => {
           {boards.map((board, idx) => (
             <button
               key={board.name}
-              className={`w-11/12 mx-auto mb-1 p-3 rounded-lg text-left flex items-center transition-all duration-200 font-semibold group shadow-sm border border-transparent ${
-                selected === idx
-                  ? "bg-blue-600 text-white shadow-md border-blue-700 scale-[1.02]"
-                  : "bg-white text-blue-700 hover:bg-blue-100 hover:border-blue-300 hover:scale-[1.01]"
-              }`}
+              className={`w-11/12 mx-auto mb-1 p-3 rounded-lg text-left flex items-center transition-all duration-200 font-semibold group shadow-sm border border-transparent ${selected === idx
+                ? "bg-blue-600 text-white shadow-md border-blue-700 scale-[1.02]"
+                : "bg-white text-blue-700 hover:bg-blue-100 hover:border-blue-300 hover:scale-[1.01]"
+                }`}
               onClick={() => {
                 setSelected(idx);
                 if (window.innerWidth < 768) { // Close sidebar on mobile after selection
@@ -163,10 +155,9 @@ export const Librarian = () => {
                 }
               }}
             >
-              <FontAwesomeIcon 
-                className={`size-5 mr-3 ${
-                  selected === idx ? 'text-white' : 'text-blue-500 group-hover:text-blue-700'
-                }`} 
+              <FontAwesomeIcon
+                className={`size-5 mr-3 ${selected === idx ? 'text-white' : 'text-blue-500 group-hover:text-blue-700'
+                  }`}
                 icon={board.icon}
               />
               {board.name}
@@ -186,7 +177,7 @@ export const Librarian = () => {
 
       {/* Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="md:hidden fixed inset-0 bg-black transition-opacity duration-200 ease-out bg-opacity-50 z-0"
           onClick={() => setIsSidebarOpen(false)}
         />

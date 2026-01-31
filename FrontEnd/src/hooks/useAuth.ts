@@ -1,10 +1,14 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuthContext } from "../context/AuthContext";
 
 interface UseAuthResult {
   isAuthenticated: boolean;
   userRole: string | null;
   userId: string | null;
+  user: any;
+  isLoading: boolean;
+  logout: () => void;
 }
 
 /**
@@ -12,14 +16,15 @@ interface UseAuthResult {
  * Can be used in components to verify access
  */
 export const useAuth = (): UseAuthResult => {
-  const token = localStorage.getItem("token");
-  const userRole = localStorage.getItem("userRole");
-  const userId = localStorage.getItem("userId");
+  const { isAuthenticated, user, isLoading, logout } = useAuthContext();
 
   return {
-    isAuthenticated: !!token,
-    userRole,
-    userId,
+    isAuthenticated,
+    userRole: user?.role || null,
+    userId: user?.id || null,
+    user,
+    isLoading,
+    logout
   };
 };
 
@@ -29,13 +34,13 @@ export const useAuth = (): UseAuthResult => {
  */
 export const useRequireAuth = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       navigate("/auth/login", { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   return isAuthenticated;
 };
@@ -46,19 +51,21 @@ export const useRequireAuth = () => {
  */
 export const useRequireRole = (requiredRole: string | string[]) => {
   const navigate = useNavigate();
-  const { userRole, isAuthenticated } = useAuth();
+  const { userRole, isAuthenticated, isLoading } = useAuth();
   const allowedRoles = useMemo(
     () => (Array.isArray(requiredRole) ? requiredRole : [requiredRole]),
     [requiredRole]
   );
 
   useEffect(() => {
+    if (isLoading) return;
+
     if (!isAuthenticated) {
       navigate("/auth/login", { replace: true });
     } else if (!userRole || !allowedRoles.includes(userRole)) {
       navigate("/", { replace: true });
     }
-  }, [userRole, isAuthenticated, navigate, allowedRoles]);
+  }, [userRole, isAuthenticated, isLoading, navigate, allowedRoles]);
 
   return isAuthenticated && userRole && allowedRoles.includes(userRole);
 };
