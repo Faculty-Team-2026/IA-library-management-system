@@ -7,7 +7,8 @@
     "backend": "cd BackEnd && dotnet run",
     "frontend": "cd FrontEnd && npm run dev",
     "install-all": "cd FrontEnd && npm install && cd ../BackEnd && dotnet restore",
-    "build": "cd FrontEnd && npm run build && cd ../BackEnd && dotnet build"
+    "build": "cd FrontEnd && npm run build",
+    "vercel-install": "cd FrontEnd && npm install"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
