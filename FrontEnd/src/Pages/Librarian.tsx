@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBook,
@@ -101,7 +100,7 @@ export const Librarian = () => {
       onTouchEnd={handleTouchEnd}
     >
       {/* Mobile Menu Button - Sticky (hidden when sidebar is open) */}
-      <div className={`md:hidden sticky top-4 left-4 z-50 float-left ml-4 transition-opacity duration-200 ${isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <div className={`md:hidden sticky top - 4 left - 4 z - 50 float - left ml - 4 transition - opacity duration - 200 ${isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'} `}>
         <button
           className="p-3 rounded-lg bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
           onClick={() => setIsSidebarOpen(true)}
@@ -116,17 +115,17 @@ export const Librarian = () => {
       {/* Sidebar */}
       <nav className={`
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        transition-transform duration-200 ease-out
-        fixed md:static
-        w-72 z-50
-        h-screen md:h-auto
-        top-0 left-0
-        bg-blue-50
-        md:translate-x-0
-        flex flex-col
-        overflow-y-auto
-        shadow-xl
-      `}>
+transition - transform duration - 200 ease - out
+        fixed md: static
+w - 72 z - 50
+h - screen md: h - auto
+top - 0 left - 0
+bg - blue - 50
+md: translate - x - 0
+        flex flex - col
+overflow - y - auto
+shadow - xl
+  `}>
         {/* Navigation Header with Close Button */}
         <div className="flex items-center justify-between p-4 border-b border-blue-100">
           <h2 className="text-lg font-bold text-blue-800">NAVIGATION</h2>
@@ -144,10 +143,10 @@ export const Librarian = () => {
           {boards.map((board, idx) => (
             <button
               key={board.name}
-              className={`w-11/12 mx-auto mb-1 p-3 rounded-lg text-left flex items-center transition-all duration-200 font-semibold group shadow-sm border border-transparent ${selected === idx
-                ? "bg-blue-600 text-white shadow-md border-blue-700 scale-[1.02]"
-                : "bg-white text-blue-700 hover:bg-blue-100 hover:border-blue-300 hover:scale-[1.01]"
-                }`}
+              className={`w - 11 / 12 mx - auto mb - 1 p - 3 rounded - lg text - left flex items - center transition - all duration - 200 font - semibold group shadow - sm border border - transparent ${selected === idx
+                  ? "bg-blue-600 text-white shadow-md border-blue-700 scale-[1.02]"
+                  : "bg-white text-blue-700 hover:bg-blue-100 hover:border-blue-300 hover:scale-[1.01]"
+                } `}
               onClick={() => {
                 setSelected(idx);
                 if (window.innerWidth < 768) { // Close sidebar on mobile after selection
@@ -156,8 +155,8 @@ export const Librarian = () => {
               }}
             >
               <FontAwesomeIcon
-                className={`size-5 mr-3 ${selected === idx ? 'text-white' : 'text-blue-500 group-hover:text-blue-700'
-                  }`}
+                className={`size - 5 mr - 3 ${selected === idx ? 'text-white' : 'text-blue-500 group-hover:text-blue-700'
+                  } `}
                 icon={board.icon}
               />
               {board.name}

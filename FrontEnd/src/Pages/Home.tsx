@@ -38,8 +38,8 @@ export const Home = () => {
   return (
     <div className="w-full min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="px-4 sm:px-10 mt-10 lg:px-60 bg-gradient-to-br w-full h-screen">
-        <div className="h-screen flex lg:flex-row md:flex-col-reverse sm:flex-col-reverse flex-col-reverse items-center 2xl:justify-between sm:justify-center justify-end gap-8 mx-auto text-center lg:text-left">
+      <section className="px-4 sm:px-10 mt-10 lg:px-20 xl:px-32 2xl:px-44 bg-gradient-to-br w-full h-screen">
+        <div className="max-w-[1800px] mx-auto h-screen flex lg:flex-row md:flex-col-reverse sm:flex-col-reverse flex-col-reverse items-center 2xl:justify-between sm:justify-center justify-end gap-8 text-center lg:text-left">
           <div className="w-full lg:w-2/3 space-y-6">
             <h1 className="sm:text-6xl text-2xl lg:leading-snug lg:text-4xl 2xl:text-6xl font-halimum font-bold text-gray-800 leading-tight mb-8 lg:mb-16">
               Where Your Book Journey Begins
@@ -71,65 +71,70 @@ export const Home = () => {
       </section>
 
       {/* Services Section */}
-      <section>
-        <div className="px-4 sm:px-10 lg:px-60 w-full bg-white flex flex-col md:flex-row text-black items-center justify-center">
-          <div className="w-full lg:w-1/2 overflow-hidden">
-            <img
-              src="/public/Image/students-working-study-group.jpg"
-              alt="Community"
-              className="hover:scale-110 transition duration-700 w-full h-auto"
-            />
-          </div>
-          <div className="w-full lg:w-1/2 flex flex-col items-center justify-center gap-8">
-            <div className="flex flex-col items-center gap-3">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl text-left font-poppins font-bold italic mb-8 lg:mb-14 text-primary tracking-tight drop-shadow">
-                Reader's Community
-              </h2>
-              <hr className="w-14 h-[3px] bg-primary rounded-full" />
+      <section className="bg-white">
+        <div className="px-4 sm:px-10 lg:px-20 xl:px-32 2xl:px-44 w-full py-12">
+          <div className="max-w-[1800px] mx-auto flex flex-col md:flex-row items-center justify-center gap-12">
+            <div className="w-full lg:w-1/2 overflow-hidden rounded-2xl shadow-lg">
+              <img
+                src="/public/Image/students-working-study-group.jpg"
+                alt="Community"
+                className="hover:scale-110 transition duration-700 w-full h-auto"
+              />
             </div>
-            <p className="text-center w-full sm:w-3/4 font-poppins text-base sm:text-lg md:text-sm text-gray-700 leading-relaxed">
-              Join our reading community and share your thoughts with fellow
-              book enthusiasts. Discover new perspectives, engage in meaningful
-              discussions, and connect with like-minded readers who share your
-              passion for books.
-            </p>
+            <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-start text-center lg:text-left gap-6">
+              <div className="flex flex-col items-center lg:items-start gap-3">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-poppins font-bold italic text-primary tracking-tight">
+                  Reader's Community
+                </h2>
+                <hr className="w-14 h-[3px] bg-primary rounded-full" />
+              </div>
+              <p className="font-poppins text-base sm:text-lg text-gray-700 leading-relaxed">
+                Join our reading community and share your thoughts with fellow
+                book enthusiasts. Discover new perspectives, engage in meaningful
+                discussions, and connect with like-minded readers who share your
+                passion for books.
+              </p>
+            </div>
           </div>
         </div>
-        <div className="px-4 sm:px-10 lg:px-60 w-full bg-white flex flex-col md:flex-row-reverse md:text-sm text-black items-center justify-center">
-          <div className="w-full lg:w-1/2 overflow-hidden">
-            <img
-              src="/Image/crop-hand-picking-book-from-shelf.jpg"
-              alt="Community"
-              className="hover:scale-110 transition duration-700 w-full h-auto"
-            />
-          </div>
-          <div className="w-full lg:w-1/2 flex flex-col items-center justify-center gap-8">
-            <div className="flex flex-col items-center gap-3">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl text-left font-poppins font-bold italic mb-8 lg:mb-14 text-primary tracking-tight drop-shadow">
-                Book Lending
-              </h2>
-              <hr className="w-14 h-[3px] bg-primary rounded-full" />
+
+        <div className="px-4 sm:px-10 lg:px-20 xl:px-32 2xl:px-44 w-full py-12 bg-gray-50">
+          <div className="max-w-[1800px] mx-auto flex flex-col md:flex-row-reverse items-center justify-center gap-12">
+            <div className="w-full lg:w-1/2 overflow-hidden rounded-2xl shadow-lg">
+              <img
+                src="/Image/crop-hand-picking-book-from-shelf.jpg"
+                alt="Lending"
+                className="hover:scale-110 transition duration-700 w-full h-auto"
+              />
             </div>
-            <p className="text-center w-full sm:w-3/4 md:text-sm font-poppins text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed">
-              Borrow physical books from our extensive collection, carefully
-              curated to include a wide range of genres, authors, and topics to
-              suit every reader's taste.
-            </p>
+            <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-start text-center lg:text-left gap-6">
+              <div className="flex flex-col items-center lg:items-start gap-3">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-poppins font-bold italic text-primary tracking-tight">
+                  Book Lending
+                </h2>
+                <hr className="w-14 h-[3px] bg-primary rounded-full" />
+              </div>
+              <p className="font-poppins text-base sm:text-lg text-gray-700 leading-relaxed">
+                Borrow physical books from our extensive collection, carefully
+                curated to include a wide range of genres, authors, and topics to
+                suit every reader's taste.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Popular Books Section - Now visible to all */}
-      <section className="mt-10 px-4 sm:px-10 lg:px-60 w-full bg-white text-black">
-        <div className="w-full mx-auto">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl text-left font-poppins font-bold italic mb-8 lg:mb-14 text-primary tracking-tight drop-shadow">
+      {/* Popular Books Section */}
+      <section className="mt-20 px-4 sm:px-10 lg:px-20 xl:px-32 2xl:px-44 w-full text-black">
+        <div className="max-w-[1800px] mx-auto">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl text-left font-poppins font-bold italic mb-12 text-primary tracking-tight">
             Popular Books
           </h2>
           {error ? (
             <p className="text-center text-red-500">{error}</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 justify-items-center">
-              {sortedBooks.slice(0, 6).map((book) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 justify-items-center">
+              {sortedBooks.slice(0, 10).map((book) => (
                 <BookCard book={book} key={book.id} />
               ))}
             </div>
@@ -139,18 +144,18 @@ export const Home = () => {
 
       {/* Join Club Section - Only for guests */}
       {!isAuthenticated && !isLoading && (
-        <section className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
-          <div className="max-w-4xl mx-auto bg-gradient-to-r from-[#2c3e50] to-[#4a6b8a] text-white rounded-xl p-6 sm:p-8 lg:p-12 text-center shadow-lg">
-            <h2 className="text-2xl font-poppins sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6">
+        <section className="px-4 sm:px-10 lg:px-20 xl:px-32 2xl:px-44 py-20">
+          <div className="max-w-[1200px] mx-auto bg-gradient-to-r from-[#2c3e50] to-[#4a6b8a] text-white rounded-3xl p-10 lg:p-16 text-center shadow-2xl">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-poppins font-bold mb-6">
               Join Our Reading Community Today
             </h2>
-            <p className="text-base sm:text-lg mb-6 sm:mb-8 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl mb-10 max-w-2xl mx-auto opacity-90">
               Become a member and enjoy exclusive benefits and access to our
               entire collection.
             </p>
             <Link
               to="/auth/register"
-              className="inline-block bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-md font-semibold hover:bg-[#1abc9c] hover:text-white transition-all duration-400 text-base sm:text-lg shadow-md hover:shadow-lg hover:from-teal-500 hover:to-emerald-400"
+              className="inline-block bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-10 py-4 rounded-full font-bold hover:scale-105 transition-all text-xl shadow-lg"
             >
               Join Now
             </Link>
@@ -159,12 +164,12 @@ export const Home = () => {
       )}
 
       {/* Library Locations Section */}
-      <section className="px-4 sm:px-10 lg:px-60 py-16 bg-white">
-        <div className="w-full mx-auto">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl text-left font-poppins font-bold italic mb-8 lg:mb-14 text-primary tracking-tight drop-shadow">
+      <section className="px-4 sm:px-10 lg:px-20 xl:px-32 2xl:px-44 py-24 bg-white">
+        <div className="max-w-[1800px] mx-auto w-full">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl text-left font-poppins font-bold italic mb-12 text-primary tracking-tight">
             Find Our Libraries
           </h2>
-          <div className="w-full">
+          <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-gray-100">
             <HomeMapView />
           </div>
         </div>
@@ -174,11 +179,11 @@ export const Home = () => {
       {isAuthenticated && (
         <button
           onClick={() => navigate("/chat")}
-          className="fixed bottom-4 sm:bottom-8 right-4 sm:right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg p-4 sm:p-5 flex items-center justify-center transition-all duration-300 group"
+          className="fixed bottom-8 right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-2xl p-5 flex items-center justify-center transition-all duration-300 group hover:scale-110"
           title="Open Community Chat"
         >
-          <span className="text-xl sm:text-2xl">💬</span>
-          <span className="ml-2 opacity-0 sm:opacity-100 group-hover:opacity-100 transition-opacity text-sm sm:text-base font-semibold">
+          <span className="text-2xl">💬</span>
+          <span className="ml-2 w-0 overflow-hidden group-hover:w-16 transition-all duration-300 text-lg font-bold">
             Chat
           </span>
         </button>
